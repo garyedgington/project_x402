@@ -1,9 +1,9 @@
 # Project x402 — Phase 1 Task List
 
-Status: Phase 1 baseline  
+Status: Phase 6 in progress  
 Owner: Developer  
 Product owner: Gary  
-Last updated: 2026-05-09
+Last updated: 2026-05-11
 
 ## Phase 1 Goal
 
@@ -145,15 +145,16 @@ Completed so far:
 - Created `docs/agent_quickstart.md` — full agent integration guide with x402 payment examples, Python snippets, use cases.
 - Created `docs/distribution_plan.md` — target audiences, channel priority list, tracking table, messaging guide.
 
-Remaining:
-- [ ] Confirm GitHub repo is public with correct topics
-- [ ] Deploy trial endpoint to Railway (push to master)
-- [ ] Submit to x402.org registry/showcase if available
-- [ ] Post in Coinbase/Base developer Discord
-- [ ] Write and schedule Dev.to post
+Remaining (user-side outreach actions):
+- [x] GitHub repo made public
+- [x] Trial endpoint deployed to Railway (pushed to master)
+- [ ] Set GitHub repo topics: json, jsonschema, x402, fastapi, micropayments, validation, usdc, base
+- [ ] Post in Coinbase/Base CDP Discord (discord.gg/cdp)
 - [ ] Submit Show HN
-- [ ] Post in relevant Reddit threads
+- [ ] Publish Dev.to article
+- [ ] Post in r/Python and r/webdev Reddit
 - [ ] Post trial link in AI agent Discord servers
+- [ ] Set up UptimeRobot monitor for /health endpoint
 - [ ] Record first week call counts in distribution_plan.md tracking table
 
 ## Phase 5 — Measurement and Economics
