@@ -1,6 +1,6 @@
 # Project x402 — Phase Plan
 
-_Last updated: 2026-05-09_
+_Last updated: 2026-05-11 — Phase 6 in progress_
 
 ## Project Goal
 
@@ -41,7 +41,7 @@ Build a machine-native paid API service that performs one narrow, useful task an
 - Example requests and responses are written.
 - MVP feature list is frozen.
 
-## Phase 2 — Build Local MVP [MEDIUM]
+## Phase 2 — Build Local MVP [COMPLETE ✓]
 
 **Objective:** Build a local API that validates payloads and returns useful, predictable responses.
 
@@ -61,7 +61,7 @@ Build a machine-native paid API service that performs one narrow, useful task an
 - Test suite passes.
 - Validation behavior is deterministic enough to trust.
 
-## Phase 3 — Payment Gate Integration [MEDIUM]
+## Phase 3 — Payment Gate Integration [COMPLETE ✓]
 
 **Objective:** Add x402-style payment gating so each call requires payment before access.
 
@@ -79,7 +79,7 @@ Build a machine-native paid API service that performs one narrow, useful task an
 - Paid request succeeds.
 - Payment, request, and response are correlated in logs.
 
-## Phase 4 — Deploy Public Test Endpoint [MEDIUM]
+## Phase 4 — Deploy Public Test Endpoint [COMPLETE ✓]
 
 **Objective:** Make SchemaCheck Agent callable by external agents and developers.
 
@@ -98,7 +98,7 @@ Build a machine-native paid API service that performs one narrow, useful task an
 - Health check works.
 - Docs are sufficient for an external caller to use the service.
 
-## Phase 5 — Measurement and Economics [MEDIUM]
+## Phase 5 — Measurement and Economics [COMPLETE ✓]
 
 **Objective:** Determine whether the endpoint can be economically positive.
 
@@ -116,7 +116,7 @@ Build a machine-native paid API service that performs one narrow, useful task an
 - Unit economics are known.
 - Clear decision exists: continue, revise, or stop.
 
-## Phase 6 — Distribution Test [MEDIUM]
+## Phase 6 — Distribution Test [IN PROGRESS]
 
 **Objective:** Find out whether agents or developers will actually call the endpoint.
 

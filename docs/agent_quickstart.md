@@ -1,0 +1,270 @@
+# SchemaCheck Agent — Agent & Developer Quickstart
+
+**Base URL:** `https://projectx402-production.up.railway.app`  
+**Version:** 0.3.0  
+**Payment:** x402 v2, USDC on Base Sepolia, $0.005 per call  
+**Trial endpoint:** Free, no payment, no repair, 32KB limit
+
+---
+
+## 1. Try it instantly (no payment setup)
+
+The trial endpoint requires no x402 configuration and no wallet. It runs full JSON Schema validation and returns structured errors, but does not return repair suggestions.
+
+### curl
+
+```bash
+curl -X POST https://projectx402-production.up.railway.app/v1/schema-check/trial \
+  -H "Content-Type: application/json" \
+  -d '{
+    "json_schema": {
+      "type": "object",
+      "required": ["user_id", "action"],
+      "properties": {
+        "user_id": {"type": "string"},
+        "action": {"type": "string", "enum": ["read", "write", "delete"]},
+        "timestamp": {"type": "string", "format": "date-time"}
+      },
+      "additionalProperties": false
+    },
+    "payload": {
+      "user_id": 12345,
+      "action": "execute"
+    },
+    "explain": true
+  }'
+```
+
+### Python
+
+```python
+import httpx
+
+schema = {
+    "type": "object",
+    "required": ["user_id", "action"],
+    "properties": {
+        "user_id": {"type": "string"},
+        "action": {"type": "string", "enum": ["read", "write", "delete"]},
+    },
+    "additionalProperties": False,
+}
+
+payload = {"user_id": 12345, "action": "execute"}
+
+response = httpx.post(
+    "https://projectx402-production.up.railway.app/v1/schema-check/trial",
+    json={"json_schema": schema, "payload": payload, "explain": True},
+)
+result = response.json()
+print(result["valid"])       # False
+print(result["errors"])      # list of ValidationErrorDetail objects
+print(result["summary"])     # plain-English explanation
+```
+
+---
+
+## 2. Full paid endpoint with x402
+
+The paid endpoint at `POST /v1/schema-check` includes repair suggestions and has no size limit. Each call costs $0.005 USDC, paid automatically via the x402 protocol.
+
+### x402 payment flow (v2)
+
+```
+Client                          Server                        Facilitator
+  |                               |                               |
+  |-- POST /v1/schema-check ----->|                               |
+  |<-- 402 Payment Required ------|                               |
+  |   (x402Version=2, accepts[])  |                               |
+  |                               |                               |
+  |-- Sign EIP-3009 payment       |                               |
+  |-- POST /v1/schema-check ----->|                               |
+  |   (PAYMENT-SIGNATURE header)  |-- verify payment ------------>|
+  |                               |<-- verified ------------------|
+  |<-- 200 OK (result) -----------|                               |
+```
+
+### Python with x402 SDK
+
+```python
+import httpx
+from x402.client import wrap_http_client  # pip install x402[evm]
+from eth_account import Account
+
+PRIVATE_KEY = "0x..."   # your test wallet private key
+BASE_URL = "https://projectx402-production.up.railway.app"
+
+account = Account.from_key(PRIVATE_KEY)
+client = wrap_http_client(httpx.Client(), account)
+
+schema = {
+    "type": "object",
+    "required": ["name", "email"],
+    "properties": {
+        "name": {"type": "string"},
+        "email": {"type": "string", "format": "email"},
+    },
+    "additionalProperties": False,
+}
+
+response = client.post(
+    f"{BASE_URL}/v1/schema-check",
+    json={
+        "json_schema": schema,
+        "payload": {"name": "Ada Lovelace", "email": "ada@example.com"},
+        "repair": False,
+        "explain": True,
+    },
+)
+result = response.json()
+print(result["valid"])    # True
+```
+
+The x402 SDK handles the 402 → sign → retry flow automatically.
+
+---
+
+## 3. Request schema
+
+```json
+{
+  "json_schema": { },        // required — JSON Schema document
+  "payload": { },            // required — any JSON value
+  "strictness": "normal",    // optional: "strict" | "normal" | "lenient"
+  "repair": false,           // optional: boolean (paid endpoint only)
+  "explain": true            // optional: boolean
+}
+```
+
+### Strictness modes
+
+| Mode | Behaviour |
+|---|---|
+| `strict` | Deterministic errors only. No coercion, no repair. |
+| `normal` | Validate deterministically, explain errors. Repair only if `repair=true`. |
+| `lenient` | Same as normal, but allows conservative type coercion in repair suggestions. |
+
+---
+
+## 4. Response schema
+
+```json
+{
+  "valid": true,
+  "errors": [],
+  "summary": "The payload is valid against the supplied JSON Schema.",
+  "suggested_payload": null,
+  "confidence": 1.0,
+  "meta": {
+    "strictness": "normal",
+    "repair_attempted": false,
+    "engine": "jsonschema",
+    "schema_draft": "auto"
+  }
+}
+```
+
+### Error object shape
+
+```json
+{
+  "path": "/email",
+  "code": "format",
+  "message": "'not-an-email' is not a valid email address.",
+  "schema_path": "/properties/email/format",
+  "expected": null,
+  "actual": null
+}
+```
+
+---
+
+## 5. Error codes
+
+| Code | Meaning |
+|---|---|
+| `required` | A required property is missing |
+| `type` | Wrong JSON type |
+| `format` | Value does not match the format (e.g. `email`, `date-time`) |
+| `enum` | Value not in allowed enum list |
+| `additionalProperties` | Extra property not allowed by schema |
+| `minimum` / `maximum` | Numeric range violation |
+| `minLength` / `maxLength` | String length violation |
+| `pattern` | String does not match regex pattern |
+| `items` | Array item fails schema |
+| `oneOf` / `anyOf` / `allOf` | Composite schema failure |
+| `unknown` | Schema error not mapped to a named code |
+
+---
+
+## 6. API-level error responses
+
+These are transport errors, not validation failures.
+
+| HTTP status | Code | When |
+|---|---|---|
+| 400 | `INVALID_JSON_SCHEMA` | The `json_schema` field is not a valid JSON Schema |
+| 402 | — | Payment required (paid endpoint only) |
+| 413 | `TRIAL_PAYLOAD_TOO_LARGE` | Trial endpoint body exceeds 32KB |
+| 422 | — | Missing required field or invalid field value |
+
+---
+
+## 7. Common use cases
+
+### Validate an API request payload before forwarding
+
+```python
+def validate_before_forward(schema, incoming_payload):
+    result = httpx.post(
+        "https://projectx402-production.up.railway.app/v1/schema-check/trial",
+        json={"json_schema": schema, "payload": incoming_payload},
+    ).json()
+    if not result["valid"]:
+        raise ValueError(result["summary"])
+    return incoming_payload
+```
+
+### Agent self-check before emitting structured output
+
+```python
+OUTPUT_SCHEMA = {
+    "type": "object",
+    "required": ["action", "confidence"],
+    "properties": {
+        "action": {"type": "string"},
+        "confidence": {"type": "number", "minimum": 0, "maximum": 1},
+    },
+}
+
+def emit_validated_output(output: dict) -> dict:
+    check = httpx.post(
+        "https://projectx402-production.up.railway.app/v1/schema-check/trial",
+        json={"json_schema": OUTPUT_SCHEMA, "payload": output},
+    ).json()
+    if not check["valid"]:
+        raise RuntimeError(f"Output failed schema check: {check['summary']}")
+    return output
+```
+
+---
+
+## 8. Payment details
+
+| Field | Value |
+|---|---|
+| Protocol | x402 v2 |
+| Network | Base Sepolia (eip155:84532) — testnet |
+| Asset | USDC (0x036CbD53842c5426634e7929541eC2318f3dCF7e) |
+| Price | 5000 atomic units = $0.005 USDC |
+| Facilitator | https://x402.org/facilitator |
+| Scheme | exact (EIP-3009 TransferWithAuthorization) |
+
+---
+
+## 9. Health check
+
+```bash
+curl https://projectx402-production.up.railway.app/health
+# {"status":"ok","service":"schemacheck-agent","version":"0.3.0"}
+```

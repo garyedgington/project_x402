@@ -99,30 +99,70 @@ Start with deterministic validation only. Do not add AI repair or payment gating
 
 ## Phase 3.6 — Guarded Real x402 Flow
 
-Status: complete in sandbox.
+Status: COMPLETE ✓ (2026-05-11)
 
-- Added `X-PAYMENT` handling for x402 mode.
-- Added x402-shaped `402 Payment Required` response.
-- Added payment requirements for Base Sepolia testnet.
-- Added guarded SDK verification path.
-- Kept live verification disabled by default.
-- Added tests for missing payTo, unpaid x402 request, and guarded payment payload.
+- Added `X-PAYMENT` and `PAYMENT-SIGNATURE` handling for x402 v2 mode.
+- Added x402 v2 PaymentRequired response (accepts array with asset/amount/payTo).
+- Added EIP-712 domain extra: `{"name": "USDC", "version": "2"}` for Base Sepolia USDC.
+- Added `HTTPFacilitatorClientSync` + `x402ResourceServerSync` for sync FastAPI endpoints.
+- Live verification enabled via `SCHEMACHECK_X402_REAL_VERIFICATION_ENABLED=true` on Railway.
 
-## Phase 4.1 — Railway Deployment Prep
+## Phase 4 — Railway Deployment
 
-Status: complete in sandbox.
+Status: COMPLETE ✓ (2026-05-11)
 
-Build:
-- Added `railway.toml`.
-- Added `Procfile`.
-- Added `docs/railway_deployment.md`.
+- `railway.toml`, `Procfile` committed and deployed.
+- Fixed UTF-16 BOM encoding on `requirements.txt` (root cause of 15+ build failures).
+- Fixed Railway branch tracking: set to `master`.
+- Pushed full codebase (app/, tests/, docs/) to GitHub.
+- Changed `x402==2.9.0` → `x402[evm]==2.9.0` to enable EVM verification on Railway.
+- Public URL: https://projectx402-production.up.railway.app
+- Health check: `/health` returns version 0.3.0.
+- Payment mode: `SCHEMACHECK_PAYMENT_MODE=x402` (live on Railway).
 
-Test:
-- Local automated tests still pass.
+## Phase 5 — First Live x402 Testnet Payment
 
-Next human action:
-- Replace local folder with the Phase 4.1 package.
-- Run tests locally.
-- Commit and push deployment files.
-- Connect GitHub repo to Railway.
+Status: COMPLETE ✓ (2026-05-11)
+
+- Test wallet: `0x272DDa1C5caC775752ab8432A50dfD8ed2d4001B`
+- Funded via Coinbase Developer Platform faucet (Circle faucet unreliable).
+- Ran `test_payment.py` — full x402 v2 flow end-to-end:
+  - 402 received with PAYMENT-REQUIRED header and x402Version=2
+  - EIP-3009 payment signed and sent as PAYMENT-SIGNATURE
+  - Facilitator verified and settled on Base Sepolia
+  - 200 returned: `"valid": true, "summary": "Payload is valid against the supplied JSON Schema."`
+- Payment amount: 5000 atomic units = $0.005 USDC on Base Sepolia testnet.
+
+Next phase: Phase 6 — Distribution and external caller measurement.
+
+## Phase 6 — Distribution Test
+
+Status: IN PROGRESS (started 2026-05-11)
+
+Completed so far:
+- Added `POST /v1/schema-check/trial` — free endpoint, no payment, 32KB limit, no repair suggestions.
+- Rewrote `README.md` as public-facing doc with live URL, curl quickstart, trial vs paid endpoints.
+- Created `docs/agent_quickstart.md` — full agent integration guide with x402 payment examples, Python snippets, use cases.
+- Created `docs/distribution_plan.md` — target audiences, channel priority list, tracking table, messaging guide.
+
+Remaining:
+- [ ] Confirm GitHub repo is public with correct topics
+- [ ] Deploy trial endpoint to Railway (push to master)
+- [ ] Submit to x402.org registry/showcase if available
+- [ ] Post in Coinbase/Base developer Discord
+- [ ] Write and schedule Dev.to post
+- [ ] Submit Show HN
+- [ ] Post in relevant Reddit threads
+- [ ] Post trial link in AI agent Discord servers
+- [ ] Record first week call counts in distribution_plan.md tracking table
+
+## Phase 5 — Measurement and Economics
+
+Status: COMPLETE ✓ (2026-05-11)
+
+- Measurement report written: `phase5_measurement_report.md`
+- Unit economics confirmed: $0.005 revenue/call, ~$0.000 marginal compute cost, break-even at ~1,000 calls/month on ~$5/month Railway hosting.
+- Payment flow confirmed end-to-end: 1/1 testnet payments succeeded.
+- Validation behavior confirmed correct across all test cases.
+- Decision recorded: Continue to Phase 6. Economics are not the constraint — distribution is.
 
