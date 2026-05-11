@@ -113,10 +113,15 @@ def verify_x402_payment(payment_payload: str, settings: Settings) -> None:
 
         payload = decode_payment_signature_header(payment_payload)
         verify_result = resource_server.verify_payment(payload, requirements)
-        if not getattr(verify_result, "is_valid", False) and not getattr(verify_result, "isValid", False):
+        if not getattr(verify_result, "is_valid", False):
             raise HTTPException(
                 status_code=status.HTTP_402_PAYMENT_REQUIRED,
-                detail={"code": "X402_PAYMENT_INVALID", "message": "x402 payment verification failed."},
+                detail={
+                    "code": "X402_PAYMENT_INVALID",
+                    "message": "x402 payment verification failed.",
+                    "reason": getattr(verify_result, "invalid_reason", None),
+                    "detail": getattr(verify_result, "invalid_message", None),
+                },
             )
 
         resource_server.settle_payment(payload, requirements)
