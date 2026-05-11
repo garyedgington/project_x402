@@ -46,7 +46,10 @@ def build_x402_payment_required(settings: Settings, resource_url: str) -> dict[s
         "x402Version": 2,
         "resource": {
             "url": resource_url,
-            "description": "SchemaCheck Agent JSON Schema validation request",
+            "description": "Validate a JSON payload against a JSON Schema. Returns structured errors, error codes, JSONPath locations, and a plain-English summary.",
+            "mimeType": "application/json",
+            "serviceName": "SchemaCheck Agent",
+            "tags": ["json", "validation", "schema", "agent", "api"],
         },
         "accepts": [
             {
@@ -63,6 +66,50 @@ def build_x402_payment_required(settings: Settings, resource_url: str) -> dict[s
                 },
             }
         ],
+        "extensions": {
+            "bazaar": {
+                "discoverable": True,
+                "inputSchema": {
+                    "body": {
+                        "json_schema": {
+                            "type": "object",
+                            "description": "JSON Schema document to validate the payload against",
+                            "required": True,
+                        },
+                        "payload": {
+                            "type": "any",
+                            "description": "The JSON value to validate",
+                            "required": True,
+                        },
+                        "strictness": {
+                            "type": "string",
+                            "description": "Validation strictness: strict | normal | lenient. Default: normal",
+                            "required": False,
+                        },
+                        "repair": {
+                            "type": "boolean",
+                            "description": "If true, return a suggested corrected payload when possible. Default: false",
+                            "required": False,
+                        },
+                        "explain": {
+                            "type": "boolean",
+                            "description": "If true, include a plain-English summary. Default: true",
+                            "required": False,
+                        },
+                    }
+                },
+                "outputSchema": {
+                    "type": "object",
+                    "properties": {
+                        "valid": {"type": "boolean", "description": "True if the payload passes schema validation"},
+                        "errors": {"type": "array", "description": "List of structured validation errors"},
+                        "summary": {"type": "string", "description": "Plain-English validation summary"},
+                        "suggested_payload": {"type": "any", "description": "Suggested corrected payload (when repair=true)"},
+                        "confidence": {"type": "number", "description": "Confidence score 0-1"},
+                    },
+                },
+            }
+        },
     }
 
 

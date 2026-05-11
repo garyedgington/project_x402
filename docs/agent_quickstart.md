@@ -84,18 +84,68 @@ Client                          Server                        Facilitator
   |<-- 200 OK (result) -----------|                               |
 ```
 
-### Python with x402 SDK
+### Python with x402 SDK (async — recommended)
 
 ```python
-import httpx
-from x402.client import wrap_http_client  # pip install x402[evm]
+# pip install "x402[httpx]" eth_account
+import asyncio
+import os
 from eth_account import Account
+from x402 import x402Client
+from x402.http.clients import x402HttpxClient
+from x402.mechanisms.evm import EthAccountSigner
+from x402.mechanisms.evm.exact.register import register_exact_evm_client
 
-PRIVATE_KEY = "0x..."   # your test wallet private key
 BASE_URL = "https://projectx402-production.up.railway.app"
 
-account = Account.from_key(PRIVATE_KEY)
-client = wrap_http_client(httpx.Client(), account)
+async def main():
+    account = Account.from_key(os.getenv("EVM_PRIVATE_KEY"))
+    client = x402Client()
+    register_exact_evm_client(client, EthAccountSigner(account))
+
+    schema = {
+        "type": "object",
+        "required": ["name", "email"],
+        "properties": {
+            "name": {"type": "string"},
+            "email": {"type": "string", "format": "email"},
+        },
+        "additionalProperties": False,
+    }
+
+    async with x402HttpxClient(client) as http:
+        response = await http.post(
+            f"{BASE_URL}/v1/schema-check",
+            json={
+                "json_schema": schema,
+                "payload": {"name": "Ada Lovelace", "email": "ada@example.com"},
+                "repair": False,
+                "explain": True,
+            },
+        )
+        await response.aread()
+        result = response.json()
+        print(result["valid"])    # True
+
+asyncio.run(main())
+```
+
+### Python with x402 SDK (sync)
+
+```python
+# pip install "x402[requests]" eth_account
+import os
+from eth_account import Account
+from x402 import x402ClientSync
+from x402.http.clients import x402_requests
+from x402.mechanisms.evm import EthAccountSigner
+from x402.mechanisms.evm.exact.register import register_exact_evm_client
+
+BASE_URL = "https://projectx402-production.up.railway.app"
+
+account = Account.from_key(os.getenv("EVM_PRIVATE_KEY"))
+client = x402ClientSync()
+register_exact_evm_client(client, EthAccountSigner(account))
 
 schema = {
     "type": "object",
@@ -107,17 +157,18 @@ schema = {
     "additionalProperties": False,
 }
 
-response = client.post(
-    f"{BASE_URL}/v1/schema-check",
-    json={
-        "json_schema": schema,
-        "payload": {"name": "Ada Lovelace", "email": "ada@example.com"},
-        "repair": False,
-        "explain": True,
-    },
-)
-result = response.json()
-print(result["valid"])    # True
+with x402_requests(client) as session:
+    response = session.post(
+        f"{BASE_URL}/v1/schema-check",
+        json={
+            "json_schema": schema,
+            "payload": {"name": "Ada Lovelace", "email": "ada@example.com"},
+            "repair": False,
+            "explain": True,
+        },
+    )
+    result = response.json()
+    print(result["valid"])    # True
 ```
 
 The x402 SDK handles the 402 → sign → retry flow automatically.
@@ -259,6 +310,7 @@ def emit_validated_output(output: dict) -> dict:
 | Price | 5000 atomic units = $0.005 USDC |
 | Facilitator | https://x402.org/facilitator |
 | Scheme | exact (EIP-3009 TransferWithAuthorization) |
+| SDK install (buyer) | `pip install "x402[httpx]"` (async) or `pip install "x402[requests]"` (sync) |
 
 ---
 
