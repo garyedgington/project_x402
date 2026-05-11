@@ -22,19 +22,20 @@ PAYMENT_REQUIRED_DETAIL = {
 }
 
 
-def _payment_required_header_value(requirements: dict[str, Any]) -> str:
-    """Encode payment requirements into a compact HTTP-header-safe value."""
-    raw = json.dumps(requirements, separators=(",", ":")).encode("utf-8")
-    return base64.urlsafe_b64encode(raw).decode("ascii")
+def _base64_encode(data: str) -> str:
+    return base64.b64encode(data.encode("utf-8")).decode("utf-8")
 
 
-def build_x402_payment_requirements(settings: Settings | None = None) -> dict[str, Any]:
-    """Build x402-shaped payment requirements for this protected resource.
+def build_x402_payment_required(settings: Settings, resource_url: str) -> dict[str, Any]:
+    """Build a v2 PaymentRequired response body.
 
-    This intentionally returns a plain dict so local tests do not require a live
-    facilitator. Real SDK verification is handled separately and remains guarded.
+    Matches the x402 SDK v2 PaymentRequired schema:
+    {
+        x402Version: 2,
+        resource: { url, description },
+        accepts: [ PaymentRequirements ]
+    }
     """
-    settings = settings or get_settings()
     if not settings.x402_pay_to:
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
@@ -43,38 +44,37 @@ def build_x402_payment_requirements(settings: Settings | None = None) -> dict[st
 
     return {
         "x402Version": 2,
-        "scheme": settings.x402_scheme,
-        "network": settings.x402_network,
-        "payTo": settings.x402_pay_to,
-        "price": settings.x402_price,
-        "resource": "/v1/schema-check",
-        "description": "SchemaCheck Agent JSON Schema validation request",
-        "facilitator": settings.x402_facilitator_url,
+        "resource": {
+            "url": resource_url,
+            "description": "SchemaCheck Agent JSON Schema validation request",
+        },
+        "accepts": [
+            {
+                "scheme": settings.x402_scheme,
+                "network": settings.x402_network,
+                "asset": settings.x402_asset,
+                "amount": settings.x402_amount,
+                "payTo": settings.x402_pay_to,
+                "maxTimeoutSeconds": settings.x402_max_timeout_seconds,
+                "extra": {},
+            }
+        ],
     }
 
 
 def _raise_x402_payment_required(settings: Settings) -> None:
-    requirements = build_x402_payment_requirements(settings)
+    resource_url = "https://projectx402-production.up.railway.app/v1/schema-check"
+    payment_required = build_x402_payment_required(settings, resource_url)
+    header_value = _base64_encode(json.dumps(payment_required, separators=(",", ":")))
     raise HTTPException(
         status_code=status.HTTP_402_PAYMENT_REQUIRED,
-        detail={
-            "code": "PAYMENT_REQUIRED",
-            "message": "x402 payment is required to access this endpoint.",
-            "payment_protocol": "x402",
-            "payment_requirements": requirements,
-            "payment_header": X_PAYMENT_HEADER,
-        },
-        headers={PAYMENT_REQUIRED_HEADER: _payment_required_header_value(requirements)},
+        detail=payment_required,
+        headers={PAYMENT_REQUIRED_HEADER: header_value},
     )
 
 
 def verify_x402_payment(payment_payload: str, settings: Settings) -> None:
-    """Verify x402 payment through the SDK when explicitly enabled.
-
-    Phase 3.6 wires the real SDK flow behind a guard. Until live payment tests are
-    intentionally enabled, requests with X-PAYMENT return 501 instead of silently
-    pretending to settle funds.
-    """
+    """Verify x402 payment through the SDK when explicitly enabled."""
     if not settings.x402_real_verification_enabled:
         raise HTTPException(
             status_code=status.HTTP_501_NOT_IMPLEMENTED,
@@ -87,9 +87,10 @@ def verify_x402_payment(payment_payload: str, settings: Settings) -> None:
     try:
         from x402.http import FacilitatorConfig, HTTPFacilitatorClient
         from x402.mechanisms.evm.exact import ExactEvmServerScheme
-        from x402.schemas import parse_payment_payload
-        from x402.server import ResourceConfig, x402ResourceServerSync
-    except Exception as exc:  # pragma: no cover - depends on optional SDK install
+        from x402.http.utils import decode_payment_signature_header
+        from x402.server import x402ResourceServerSync
+        from x402.schemas import PaymentRequirements
+    except Exception as exc:
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail={"code": "X402_SDK_UNAVAILABLE", "message": f"Unable to import x402 SDK: {exc}"},
@@ -101,28 +102,27 @@ def verify_x402_payment(payment_payload: str, settings: Settings) -> None:
         resource_server.register(settings.x402_network, ExactEvmServerScheme())
         resource_server.initialize()
 
-        config = ResourceConfig(
+        requirements = PaymentRequirements(
             scheme=settings.x402_scheme,
             network=settings.x402_network,
-            payTo=settings.x402_pay_to,
-            price=settings.x402_price,
+            asset=settings.x402_asset,
+            amount=settings.x402_amount,
+            pay_to=settings.x402_pay_to,
+            max_timeout_seconds=settings.x402_max_timeout_seconds,
         )
-        requirements = resource_server.build_payment_requirements(config)
-        if not requirements:
-            raise RuntimeError("x402 SDK returned no payment requirements")
 
-        payload = parse_payment_payload(payment_payload.encode("utf-8"))
-        verify_result = resource_server.verify_payment(payload, requirements[0])
-        if not getattr(verify_result, "isValid", False) and not getattr(verify_result, "valid", False):
+        payload = decode_payment_signature_header(payment_payload)
+        verify_result = resource_server.verify_payment(payload, requirements)
+        if not getattr(verify_result, "is_valid", False) and not getattr(verify_result, "isValid", False):
             raise HTTPException(
                 status_code=status.HTTP_402_PAYMENT_REQUIRED,
                 detail={"code": "X402_PAYMENT_INVALID", "message": "x402 payment verification failed."},
             )
 
-        resource_server.settle_payment(payload, requirements[0])
+        resource_server.settle_payment(payload, requirements)
     except HTTPException:
         raise
-    except Exception as exc:  # pragma: no cover - live SDK/facilitator dependent
+    except Exception as exc:
         raise HTTPException(
             status_code=status.HTTP_402_PAYMENT_REQUIRED,
             detail={"code": "X402_PAYMENT_FAILED", "message": str(exc)},
