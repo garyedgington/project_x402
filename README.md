@@ -142,6 +142,18 @@ curl https://projectx402-production.up.railway.app/health
 
 ---
 
+## Reporting issues
+
+If you encounter unexpected responses, payment errors, or validation bugs, please [open a GitHub issue](https://github.com/garyedgington/project_x402/issues).
+
+Include:
+- The endpoint called (`/v1/schema-check` or `/v1/schema-check/trial`)
+- The request body (redact any sensitive data)
+- The response received
+- The `X-Request-ID` header value from the response if available
+
+---
+
 ## Further reading
 
 - [docs/agent_quickstart.md](docs/agent_quickstart.md) — Full agent integration guide with x402 payment examples
