@@ -56,7 +56,11 @@ def build_x402_payment_required(settings: Settings, resource_url: str) -> dict[s
                 "amount": settings.x402_amount,
                 "payTo": settings.x402_pay_to,
                 "maxTimeoutSeconds": settings.x402_max_timeout_seconds,
-                "extra": {},
+                # EIP-712 domain for USDC on Base Sepolia — required for client signing
+                "extra": {
+                    "name": "USD Coin",
+                    "version": "2",
+                },
             }
         ],
     }
