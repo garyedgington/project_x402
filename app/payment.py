@@ -85,7 +85,7 @@ def verify_x402_payment(payment_payload: str, settings: Settings) -> None:
         )
 
     try:
-        from x402.http import FacilitatorConfig, HTTPFacilitatorClient
+        from x402.http import FacilitatorConfig, HTTPFacilitatorClientSync
         from x402.mechanisms.evm.exact import ExactEvmServerScheme
         from x402.http.utils import decode_payment_signature_header
         from x402.server import x402ResourceServerSync
@@ -97,7 +97,7 @@ def verify_x402_payment(payment_payload: str, settings: Settings) -> None:
         ) from exc
 
     try:
-        facilitator = HTTPFacilitatorClient(FacilitatorConfig(url=settings.x402_facilitator_url))
+        facilitator = HTTPFacilitatorClientSync(FacilitatorConfig(url=settings.x402_facilitator_url))
         resource_server = x402ResourceServerSync(facilitator)
         resource_server.register(settings.x402_network, ExactEvmServerScheme())
         resource_server.initialize()
