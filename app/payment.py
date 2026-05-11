@@ -113,6 +113,7 @@ def verify_x402_payment(payment_payload: str, settings: Settings) -> None:
             amount=settings.x402_amount,
             pay_to=settings.x402_pay_to,
             max_timeout_seconds=settings.x402_max_timeout_seconds,
+            extra={"name": "USD Coin", "version": "2"},
         )
 
         payload = decode_payment_signature_header(payment_payload)
