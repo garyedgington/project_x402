@@ -131,9 +131,15 @@ def verify_x402_payment(payment_payload: str, settings: Settings) -> None:
 
 def enforce_payment(
     x_payment_token: str | None = Header(default=None, alias="X-Payment-Token"),
-    x_payment: str | None = Header(default=None, alias=X_PAYMENT_HEADER),
+    x_payment: str | None = Header(default=None, alias="X-PAYMENT"),
+    payment_signature: str | None = Header(default=None, alias="PAYMENT-SIGNATURE"),
 ) -> None:
-    """Payment gate for disabled, placeholder, and guarded x402 modes."""
+    """Payment gate for disabled, placeholder, and guarded x402 modes.
+
+    x402 v2 clients send PAYMENT-SIGNATURE (not X-PAYMENT).
+    x402 v1 clients send X-PAYMENT.
+    Both are accepted.
+    """
     settings = get_settings()
 
     if settings.payment_mode == "disabled":
@@ -145,9 +151,11 @@ def enforce_payment(
         return
 
     if settings.payment_mode == "x402":
-        if not x_payment:
+        # Accept either v2 PAYMENT-SIGNATURE or v1 X-PAYMENT
+        payment_payload = payment_signature or x_payment
+        if not payment_payload:
             _raise_x402_payment_required(settings)
-        verify_x402_payment(x_payment, settings)
+        verify_x402_payment(payment_payload, settings)
         return
 
     raise HTTPException(
