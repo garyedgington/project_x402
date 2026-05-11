@@ -57,21 +57,21 @@ MVP rule: strictness must not silently change validation truth. `valid` is alway
   "valid": false,
   "errors": [
     {
-      "path": "/email",
-      "code": "format",
-      "message": "'not-an-email' is not a valid email address.",
-      "schema_path": "/properties/email/format"
+      "path": "$.email",
+      "code": "FORMAT_VIOLATION",
+      "message": "'not-an-email' is not a 'email'",
+      "schema_path": "$/properties/email/format",
+      "expected": "email",
+      "actual": "not-an-email"
     }
   ],
-  "summary": "The payload failed validation because the email field is not formatted as an email address.",
-  "suggested_payload": {
-    "email": "user@example.com"
-  },
-  "confidence": 0.82,
+  "summary": "Payload is invalid with 1 validation error. First error: 'not-an-email' is not a 'email'",
+  "suggested_payload": null,
+  "confidence": 0.9,
   "meta": {
     "strictness": "normal",
-    "repair_attempted": true,
-    "validator": "jsonschema",
+    "repair_attempted": false,
+    "engine": "jsonschema",
     "schema_draft": "auto"
   }
 }
@@ -92,32 +92,32 @@ MVP rule: strictness must not silently change validation truth. `valid` is alway
 
 ```json
 {
-  "path": "/user/age",
-  "code": "type",
-  "message": "Expected integer but received string.",
-  "schema_path": "/properties/user/properties/age/type"
+  "path": "$.user.age",
+  "code": "TYPE_MISMATCH",
+  "message": "123 is not of type 'string'",
+  "schema_path": "$/properties/user/properties/age/type",
+  "expected": "string",
+  "actual": 123
 }
 ```
 
+Paths use JSONPath notation (`$.field`, `$[0].field`). The root object is `$`.
+
 ### Error Codes
 
-Initial normalized codes:
-
-- `required`
-- `type`
-- `format`
-- `enum`
-- `additionalProperties`
-- `minimum`
-- `maximum`
-- `minLength`
-- `maxLength`
-- `pattern`
-- `items`
-- `oneOf`
-- `anyOf`
-- `allOf`
-- `unknown`
+| Code | Trigger |
+|---|---|
+| `REQUIRED_FIELD_MISSING` | A required property is absent |
+| `TYPE_MISMATCH` | Value is the wrong JSON type |
+| `ENUM_VIOLATION` | Value is not in the allowed enum list |
+| `ADDITIONAL_PROPERTY` | Extra property not permitted by schema |
+| `FORMAT_VIOLATION` | Value does not match the format (e.g. `email`, `date-time`) |
+| `MINIMUM_VIOLATION` | Numeric value below minimum |
+| `MAXIMUM_VIOLATION` | Numeric value above maximum |
+| `MIN_LENGTH_VIOLATION` | String shorter than minLength |
+| `MAX_LENGTH_VIOLATION` | String longer than maxLength |
+| `PATTERN_VIOLATION` | String does not match regex pattern |
+| `SCHEMA_VALIDATION_ERROR` | Any other schema constraint failure |
 
 ## 6. API-Level Error Responses
 

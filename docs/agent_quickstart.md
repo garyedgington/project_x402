@@ -168,14 +168,16 @@ The x402 SDK handles the 402 → sign → retry flow automatically.
 
 ```json
 {
-  "path": "/email",
-  "code": "format",
-  "message": "'not-an-email' is not a valid email address.",
-  "schema_path": "/properties/email/format",
-  "expected": null,
-  "actual": null
+  "path": "$.email",
+  "code": "FORMAT_VIOLATION",
+  "message": "'not-an-email' is not a 'email'",
+  "schema_path": "$/properties/email/format",
+  "expected": "email",
+  "actual": "not-an-email"
 }
 ```
+
+Paths use JSONPath notation (`$.field`, `$[0].field`). The root object is `$`.
 
 ---
 
@@ -183,17 +185,15 @@ The x402 SDK handles the 402 → sign → retry flow automatically.
 
 | Code | Meaning |
 |---|---|
-| `required` | A required property is missing |
-| `type` | Wrong JSON type |
-| `format` | Value does not match the format (e.g. `email`, `date-time`) |
-| `enum` | Value not in allowed enum list |
-| `additionalProperties` | Extra property not allowed by schema |
-| `minimum` / `maximum` | Numeric range violation |
-| `minLength` / `maxLength` | String length violation |
-| `pattern` | String does not match regex pattern |
-| `items` | Array item fails schema |
-| `oneOf` / `anyOf` / `allOf` | Composite schema failure |
-| `unknown` | Schema error not mapped to a named code |
+| `REQUIRED_FIELD_MISSING` | A required property is missing |
+| `TYPE_MISMATCH` | Wrong JSON type |
+| `FORMAT_VIOLATION` | Value does not match the format (e.g. `email`, `date-time`) |
+| `ENUM_VIOLATION` | Value not in allowed enum list |
+| `ADDITIONAL_PROPERTY` | Extra property not allowed by schema |
+| `MINIMUM_VIOLATION` / `MAXIMUM_VIOLATION` | Numeric range violation |
+| `MIN_LENGTH_VIOLATION` / `MAX_LENGTH_VIOLATION` | String length violation |
+| `PATTERN_VIOLATION` | String does not match regex pattern |
+| `SCHEMA_VALIDATION_ERROR` | Any other schema constraint failure |
 
 ---
 
