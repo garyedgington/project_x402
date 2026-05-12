@@ -113,7 +113,7 @@ Status: COMPLETE ✓ (2026-05-11)
 
 - `railway.toml`, `Procfile` committed and deployed.
 - Fixed UTF-16 BOM encoding on `requirements.txt` (root cause of 15+ build failures).
-- Fixed Railway branch tracking: set to `master`.
+- Fixed Railway branch tracking: set to `main`.
 - Pushed full codebase (app/, tests/, docs/) to GitHub.
 - Changed `x402==2.9.0` → `x402[evm]==2.9.0` to enable EVM verification on Railway.
 - Public URL: https://projectx402-production.up.railway.app
@@ -147,7 +147,7 @@ Completed so far:
 
 Remaining (user-side outreach actions):
 - [x] GitHub repo made public
-- [x] Trial endpoint deployed to Railway (pushed to master)
+- [x] Trial endpoint deployed to Railway (pushed to main)
 - [x] Set GitHub repo topics: json, jsonschema, x402, fastapi, micropayments, validation, usdc, base
 - [x] Set up UptimeRobot monitor for /health endpoint (HEAD fix pushed 2026-05-11)
 - [x] Switched to Base mainnet — network, USDC asset, CDP facilitator, EIP-712 domain

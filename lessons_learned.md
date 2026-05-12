@@ -86,7 +86,7 @@ On 2026-05-11, the first real x402 v2 USDC micropayment on Base Sepolia testnet 
 
 ---
 
-_Updated: 2026-05-11 — Phase 6 session 2: mainnet switch and distribution prep_
+_Updated: 2026-05-12 — GitHub repo reconciliation and Formatter + A2A project setup_
 
 ## Lesson 16 — EIP-712 domain name differs between testnet and mainnet
 
@@ -103,4 +103,16 @@ UptimeRobot's HTTP(s) monitor sends HEAD requests, not GET. FastAPI's `@app.get`
 ## Lesson 19 — USDC exists separately on each network; specify Base when sending
 
 USDC on Ethereum mainnet and USDC on Base mainnet are separate assets. Coinbase.com allows sending USDC on multiple networks — you must explicitly select Base as the network when sending, otherwise it defaults to Ethereum. Also, Coinbase may restrict recently purchased USDC from transfer until it fully settles, even if it appears in your balance.
+
+## Lesson 20 — Keep GitHub as the authoritative source; commit and push after every session
+
+Local files diverged significantly from GitHub over multiple sessions, creating a gap between what GitHub showed (early MVP, one commit) and what Railway was actually deploying (full live code from local master). Always commit and push at the end of every session. GitHub should reflect the live state at all times — it is the primary location to validate workability.
+
+## Lesson 21 — Never commit scripts containing private keys; add them to .gitignore immediately
+
+Test and utility scripts (`test_payment.py`, `swap_eth_for_usdc.py`, `check_balance.py`) contained the test wallet private key hardcoded. These were never committed, but they also were not in `.gitignore`, leaving them at risk of accidental staging. Add any file containing wallet private keys, seed phrases, or credentials to `.gitignore` the moment it is created — not after.
+
+## Lesson 22 — Consolidate to one branch (`main`) from day one
+
+Working on a `master` branch while GitHub's default was `main` created a persistent stale split: GitHub showed old code, Railway had to be pointed at `master` explicitly, and cloning the repo fetched the wrong branch by default. For all new projects, use `main` exclusively from the first commit. Rename `master` to `main` immediately if the split already exists: `git branch -m master main && git push origin main --force`.
 
