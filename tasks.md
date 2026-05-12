@@ -148,13 +148,16 @@ Completed so far:
 Remaining (user-side outreach actions):
 - [x] GitHub repo made public
 - [x] Trial endpoint deployed to Railway (pushed to master)
-- [ ] Set GitHub repo topics: json, jsonschema, x402, fastapi, micropayments, validation, usdc, base
+- [x] Set GitHub repo topics: json, jsonschema, x402, fastapi, micropayments, validation, usdc, base
+- [x] Set up UptimeRobot monitor for /health endpoint (HEAD fix pushed 2026-05-11)
+- [x] Switched to Base mainnet — network, USDC asset, CDP facilitator, EIP-712 domain
+- [ ] Fund test wallet with Base mainnet USDC and run mainnet payment test
+- [ ] Verify Bazaar indexing at CDP discovery endpoint after first mainnet payment
 - [ ] Post in Coinbase/Base CDP Discord (discord.gg/cdp)
-- [ ] Submit Show HN
+- [ ] Submit Show HN (Tuesday–Thursday 9–11am Eastern)
 - [ ] Publish Dev.to article
 - [ ] Post in r/Python and r/webdev Reddit
 - [ ] Post trial link in AI agent Discord servers
-- [ ] Set up UptimeRobot monitor for /health endpoint
 - [ ] Record first week call counts in distribution_plan.md tracking table
 
 ## Phase 5 — Measurement and Economics

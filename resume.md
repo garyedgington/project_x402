@@ -30,7 +30,7 @@ All phases through Phase 5 are complete. The service is live, the trial endpoint
 | Health check | `GET /health` |
 | GitHub | `https://github.com/garyedgington/project_x402` (public) |
 | Deployment | Railway, auto-deploys from `master` branch |
-| Payment | x402 v2, USDC on Base Sepolia testnet (`eip155:84532`) |
+| Payment | x402 v2, USDC on Base mainnet (`eip155:8453`) |
 | Version | 0.3.0 |
 
 ---
@@ -61,15 +61,25 @@ All phases through Phase 5 are complete. The service is live, the trial endpoint
 - Bazaar discovery extension added to 402 responses
 - GitHub repo made public
 
+**Completed this session:**
+- [x] GitHub repo topics set: `json`, `jsonschema`, `x402`, `fastapi`, `micropayments`, `validation`, `usdc`, `base`
+- [x] UptimeRobot monitor set up for `/health` (HEAD fix pushed to master)
+- [x] Switched to Base mainnet: network `eip155:8453`, USDC asset, CDP facilitator
+- [x] EIP-712 domain updated: `"USD Coin"` for mainnet
+- [x] Bazaar extension confirmed present in 402 responses
+
 **Outstanding (user-side actions):**
-- [ ] Set GitHub repo topics: `json`, `jsonschema`, `x402`, `fastapi`, `micropayments`, `validation`, `usdc`, `base`
+- [ ] Fund test wallet `0x272DDa1C5caC775752ab8432A50dfD8ed2d4001B` with USDC on Base mainnet (need >$0.01)
+- [ ] Run `test_payment.py` updated for mainnet to trigger first payment and Bazaar indexing
 - [ ] Post in Coinbase/Base CDP Discord — `discord.gg/cdp`
-- [ ] Submit Show HN
+- [ ] Submit Show HN (best: Tuesday–Thursday 9–11am Eastern)
 - [ ] Publish Dev.to article
 - [ ] Post in r/Python and r/webdev
 - [ ] Post trial link in AI agent Discord servers
-- [ ] Set up UptimeRobot monitor for `/health` (guide in `docs/uptime_monitoring.md`)
 - [ ] Record first week call counts in `docs/distribution_plan.md`
+
+**Pending code change before mainnet payment test:**
+- Update `test_payment.py`: change `NETWORK` to `eip155:8453` and confirm wallet has Base mainnet USDC
 
 **Phase 6 exit criteria:** at least one external caller, OR evidence the current distribution path is ineffective.
 
@@ -112,14 +122,15 @@ All phases through Phase 5 are complete. The service is live, the trial endpoint
 - Python, FastAPI, jsonschema, Pydantic
 - x402[evm]==2.9.0 (EVM payment verification)
 - Railway (hosting, auto-deploy from master)
-- Base Sepolia testnet (USDC payments)
-- x402 facilitator: `https://x402.org/facilitator`
+- Base mainnet (USDC payments, real money)
+- x402 facilitator: `https://api.cdp.coinbase.com/platform/v2/x402` (CDP mainnet)
 
 ---
 
 ## Next session starting point
 
-1. Check whether any outreach from `docs/posts_draft.md` has been sent.
-2. Check Railway logs / health endpoint for any external calls.
-3. If outreach is done and calls have come in → mark Phase 6 complete, update `phase_plan.md` and `tasks.md`, proceed to Phase 7 decision.
-4. If no calls after reasonable time → record in `docs/distribution_plan.md` as evidence of ineffective channel, try next channel, or escalate to Phase 7 pivot decision.
+1. Fund test wallet with Base mainnet USDC and run `test_payment.py` (updated for mainnet) to trigger first real payment and Bazaar indexing.
+2. Check Railway logs for any external calls — look for `POST /v1/schema-check status=200`.
+3. Check Bazaar indexing: `Invoke-RestMethod -Uri "https://api.cdp.coinbase.com/platform/v2/x402/discovery/resources"` — look for `projectx402-production.up.railway.app`.
+4. Execute remaining distribution posts from `docs/posts_draft.md`.
+5. After one week, record call counts in `docs/distribution_plan.md` tracking table.

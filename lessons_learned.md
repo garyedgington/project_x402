@@ -46,3 +46,61 @@ A tiny service that always validates payloads correctly is more useful than a br
 
 The agent service is the engine, but the durable advantage comes from logs, failure cases, improvements, documentation, and increasingly reliable endpoint behavior.
 
+---
+
+_Updated: 2026-05-11 — Phase 4–5 deployment and first live x402 payment_
+
+## Lesson 9 — Windows UTF-16 BOM encoding silently breaks Linux deployments
+
+When a file like `requirements.txt` is created or edited on Windows, it may be saved with a UTF-16 BOM (byte-order mark). Linux pip cannot parse UTF-16 files and fails with cryptic errors. Always write deployment files with `Out-File -Encoding utf8NoBOM` in PowerShell or use a Linux-side editor. This was the root cause of 15+ Railway build failures.
+
+## Lesson 10 — Railway branch tracking must be set explicitly
+
+Railway defaults to tracking the `main` branch. If your repo uses `master` or any other branch, deployments will silently use old builds. Verify Railway Settings → Source → Branch matches the branch you are actually pushing to.
+
+## Lesson 11 — x402 v2 protocol differs significantly from v1
+
+The x402 SDK v2 PaymentRequired schema uses an `accepts` array with `asset`/`amount`/`payTo`/`maxTimeoutSeconds` fields — not the v1 `price`/`facilitator` flat fields. The payment header sent by v2 clients is `PAYMENT-SIGNATURE`, not `X-PAYMENT`. Server code must accept both for backward compatibility.
+
+## Lesson 12 — EIP-712 domain must match exactly for USDC on Base Sepolia
+
+The x402 exact EVM scheme requires an EIP-712 domain in the `extra` field of PaymentRequirements: `{"name": "USDC", "version": "2"}`. The name must be exactly `"USDC"` (not `"USD Coin"` or anything else). This value must appear identically in both the 402 response sent to the client and the PaymentRequirements object used for server-side verification. A mismatch causes `invalid_exact_evm_token_name_mismatch` from the facilitator.
+
+## Lesson 13 — Use sync facilitator client inside sync FastAPI endpoints
+
+FastAPI sync route handlers (no `async def`) must use `HTTPFacilitatorClientSync` and `x402ResourceServerSync` from the x402 SDK. Using the async variants inside a sync context raises a `requires a sync facilitator client` error at runtime.
+
+## Lesson 14 — Circle faucet reports success but often delivers nothing
+
+The Circle USDC testnet faucet at faucet.circle.com frequently confirms delivery but sends no tokens. The Coinbase Developer Platform faucet at portal.cdp.coinbase.com/products/faucet is more reliable for Base Sepolia ETH. For USDC specifically, CDP also has a faucet option that actually delivers. Always verify with an on-chain balance check after any faucet claim, not just the faucet's confirmation message.
+
+## Lesson 15 — First live x402 testnet payment: full flow confirmed
+
+On 2026-05-11, the first real x402 v2 USDC micropayment on Base Sepolia testnet completed successfully end-to-end:
+- Server deployed on Railway returned 402 with v2 PaymentRequired
+- Client parsed x402Version=2, accepted USDC on eip155:84532
+- EIP-3009 TransferWithAuthorization signed with test wallet
+- Facilitator at x402.org verified and settled the payment
+- Server returned 200 with valid SchemaCheck result
+- Payment amount: 5000 atomic units = $0.005 USDC
+
+---
+
+_Updated: 2026-05-11 — Phase 6 session 2: mainnet switch and distribution prep_
+
+## Lesson 16 — EIP-712 domain name differs between testnet and mainnet
+
+Base Sepolia USDC uses `{"name": "USDC", "version": "2"}` as the EIP-712 domain. Base mainnet USDC uses `{"name": "USD Coin", "version": "2"}`. This value must be correct in both the 402 response `extra` field and the server-side `PaymentRequirements` object. A mismatch will cause the CDP facilitator to reject the payment.
+
+## Lesson 17 — The x402 Bazaar only indexes after a payment is processed
+
+The CDP Bazaar discovery layer does not crawl endpoints or accept manual submissions. It indexes a service automatically when the CDP facilitator processes a completed payment that includes the `bazaar` extension in the 402 response. No payment through the endpoint = not in the Bazaar. The first real mainnet payment is what triggers indexing.
+
+## Lesson 18 — UptimeRobot sends HEAD requests by default; FastAPI @app.get does not accept HEAD
+
+UptimeRobot's HTTP(s) monitor sends HEAD requests, not GET. FastAPI's `@app.get` decorator only accepts GET, returning 405 Method Not Allowed for HEAD. This causes UptimeRobot to report the service as down even when it is healthy. Fix: use `@app.api_route("/health", methods=["GET", "HEAD"])` instead of `@app.get`.
+
+## Lesson 19 — USDC exists separately on each network; specify Base when sending
+
+USDC on Ethereum mainnet and USDC on Base mainnet are separate assets. Coinbase.com allows sending USDC on multiple networks — you must explicitly select Base as the network when sending, otherwise it defaults to Ethereum. Also, Coinbase may restrict recently purchased USDC from transfer until it fully settles, even if it appears in your balance.
+
