@@ -2,7 +2,7 @@
 
 **Base URL:** `https://projectx402-production.up.railway.app`  
 **Version:** 0.3.0  
-**Payment:** x402 v2, USDC on Base Sepolia, $0.005 per call  
+**Payment:** x402 v2, USDC on Base mainnet, $0.005 per call  
 **Trial endpoint:** Free, no payment, no repair, 32KB limit
 
 ---
@@ -305,10 +305,10 @@ def emit_validated_output(output: dict) -> dict:
 | Field | Value |
 |---|---|
 | Protocol | x402 v2 |
-| Network | Base Sepolia (eip155:84532) — testnet |
-| Asset | USDC (0x036CbD53842c5426634e7929541eC2318f3dCF7e) |
+| Network | Base mainnet (eip155:8453) |
+| Asset | USDC (0x833589fCD6eDb6E08f4c7C32D4f71b54bdA02913) |
 | Price | 5000 atomic units = $0.005 USDC |
-| Facilitator | https://x402.org/facilitator |
+| Facilitator | https://api.cdp.coinbase.com/platform/v2/x402 |
 | Scheme | exact (EIP-3009 TransferWithAuthorization) |
 | SDK install (buyer) | `pip install "x402[httpx]"` (async) or `pip install "x402[requests]"` (sync) |
 

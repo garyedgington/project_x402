@@ -75,7 +75,7 @@ Response:
 
 ## Quickstart — paid endpoint (x402)
 
-The paid endpoint requires an x402 v2 USDC micropayment of **$0.005** per call on Base Sepolia (testnet) or Base mainnet.
+The paid endpoint requires an x402 v2 USDC micropayment of **$0.005** per call on Base mainnet.
 
 Payment flow:
 

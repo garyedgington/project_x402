@@ -13,10 +13,10 @@ Payment modes:
 When `SCHEMACHECK_PAYMENT_MODE=x402` and no `X-PAYMENT` header is supplied, the API returns HTTP `402` with payment requirements for:
 
 - scheme: `exact`
-- network: `eip155:84532` / Base Sepolia
+- network: `eip155:8453` / Base mainnet
 - payTo: `0x8fC4006534801c17A3368075A1Fb3b3C511EdB1F`
 - price: `$0.005`
-- facilitator: `https://x402.org/facilitator`
+- facilitator: `https://api.cdp.coinbase.com/platform/v2/x402`
 
 When an `X-PAYMENT` header is supplied while live verification is disabled, the API returns HTTP `501` with `X402_REAL_VERIFICATION_DISABLED`.
 

@@ -172,6 +172,7 @@ Rationale:
 - Validation behavior is deterministic and correct across all test cases.
 - The endpoint is live and publicly reachable at `https://projectx402-production.up.railway.app`.
 - The only missing signal is external caller demand — which is exactly what Phase 6 is designed to test.
+- The x402 network is more active than initially assumed: 75.41M transactions, $24.24M volume, 94K buyers, and 22K sellers in the last 30 days (observed 2026-05-11 at x402.org). This materially improves the distribution outlook — there is an existing active buyer base.
 
 There is no evidence to revise or stop at this time. The economics are not the constraint. Distribution is.
 
