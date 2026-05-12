@@ -1,6 +1,6 @@
 # SchemaCheck Agent — Phase 6 Distribution Plan
 
-_Created: 2026-05-11_  
+_Created: 2026-05-11 | Last updated: 2026-05-11_  
 _Owner: Gary_
 
 ---
@@ -30,13 +30,18 @@ Find out whether agents or developers will actually call the endpoint. Publish t
 
 These channels are most likely to reach people who would actually call the endpoint.
 
-- [ ] **GitHub README** — Already updated. Make sure the repo is public and searchable.
+- [x] **GitHub README** — Updated. Repo is public, description and topics set.
   - Repo: `github.com/garyedgington/project_x402`
-  - Ensure repo description and topics are set: `json-schema`, `validation`, `x402`, `micropayments`, `agent`, `api`
+  - Topics set: `json`, `jsonschema`, `x402`, `fastapi`, `micropayments`, `validation`, `usdc`, `base`
 
-- [ ] **x402.org ecosystem** — The x402.org site and community are directly aligned with the payment model.
-  - Check if x402.org has a registry, showcase, or list of live x402 services
-  - Submit SchemaCheck Agent as an example live x402 endpoint
+- [x] **x402 Bazaar (CDP auto-discovery)** — Higher priority than manual submission. The Bazaar is the CDP facilitator's discovery layer at `https://api.cdp.coinbase.com/platform/v2/x402/discovery/resources`. SchemaCheck Agent will be indexed automatically after the first completed mainnet payment is processed through the CDP facilitator. No manual submission needed. The `bazaar` extension with `discoverable: true` is already present in every 402 response.
+  - **Action:** Fund test wallet and run `test_payment.py` against mainnet to trigger indexing.
+  - **Verify:** `Invoke-RestMethod -Uri "https://api.cdp.coinbase.com/platform/v2/x402/discovery/resources"` — look for `projectx402-production.up.railway.app`
+
+- [ ] **x402 Discord** — High priority. Discord link visible on x402.org homepage (top nav).
+  - Join the x402 Discord
+  - Post in the appropriate channel (likely #showcase or #built-with-x402)
+  - Message: live x402 v2 Python endpoint, free trial available, open source
 
 - [ ] **Coinbase Developer Platform / Base ecosystem**
   - Base has an active developer community; x402 is a Coinbase-adjacent standard
@@ -116,15 +121,16 @@ Check Railway logs once per week and record:
 > No wallet needed to try. POST your JSON Schema and payload to our trial endpoint, get back structured errors and a plain-English summary. No signup, no API key.
 
 ### x402-native pitch (for crypto/agent audiences)
-> SchemaCheck Agent is a live x402 v2 endpoint. Send a payload validation request, get a 402 back, sign an EIP-3009 USDC transfer on Base Sepolia, and receive your result. $0.005 per call, no subscription.
+> SchemaCheck Agent is a live x402 v2 endpoint. Send a payload validation request, get a 402 back, sign an EIP-3009 USDC transfer on Base mainnet, and receive your result. $0.005 per call, no subscription.
 
 ---
 
 ## Action checklist
 
-- [ ] Confirm GitHub repo is public and has correct topics set
-- [ ] Check x402.org for a live services registry or showcase — submit if available
-- [ ] Post in Coinbase / Base developer Discord
+- [x] GitHub repo public with correct topics set
+- [x] Bazaar extension live in 402 responses — auto-indexed after first mainnet payment
+- [ ] Fund test wallet and run mainnet payment test to trigger Bazaar indexing
+- [ ] Post in Coinbase / Base developer Discord (discord.gg/cdp)
 - [ ] Write and schedule Dev.to post
 - [ ] Submit Show HN
 - [ ] Post in 1–2 relevant Reddit threads
