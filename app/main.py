@@ -30,7 +30,7 @@ if settings.log_requests:
     app.middleware("http")(request_logging_middleware)
 
 
-@app.get("/health", response_model=HealthResponse)
+@app.api_route("/health", methods=["GET", "HEAD"], response_model=HealthResponse)
 def health() -> HealthResponse:
     return HealthResponse(status="ok", service="schemacheck-agent", version=APP_VERSION)
 
