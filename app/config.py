@@ -33,13 +33,13 @@ def get_settings() -> Settings:
         placeholder_payment_token=os.getenv("SCHEMACHECK_PLACEHOLDER_PAYMENT_TOKEN", "test-payment-token"),
         log_requests=_as_bool(os.getenv("SCHEMACHECK_LOG_REQUESTS"), True),
         x402_pay_to=os.getenv("SCHEMACHECK_X402_PAY_TO", "0x8fC4006534801c17A3368075A1Fb3b3C511EdB1F"),
-        x402_network=os.getenv("SCHEMACHECK_X402_NETWORK", "eip155:84532"),
+        x402_network=os.getenv("SCHEMACHECK_X402_NETWORK", "eip155:8453"),
         x402_scheme=os.getenv("SCHEMACHECK_X402_SCHEME", "exact"),
-        # USDC on Base Sepolia: 0x036CbD53842c5426634e7929541eC2318f3dCF7e
+        # USDC on Base mainnet: 0x833589fCD6eDb6E08f4c7C32D4f71b54bdA02913
         # $0.005 = 5000 atomic units (6 decimals)
-        x402_asset=os.getenv("SCHEMACHECK_X402_ASSET", "0x036CbD53842c5426634e7929541eC2318f3dCF7e"),
+        x402_asset=os.getenv("SCHEMACHECK_X402_ASSET", "0x833589fCD6eDb6E08f4c7C32D4f71b54bdA02913"),
         x402_amount=os.getenv("SCHEMACHECK_X402_AMOUNT", "5000"),
         x402_max_timeout_seconds=int(os.getenv("SCHEMACHECK_X402_MAX_TIMEOUT_SECONDS", "300")),
-        x402_facilitator_url=os.getenv("SCHEMACHECK_X402_FACILITATOR_URL", "https://x402.org/facilitator"),
+        x402_facilitator_url=os.getenv("SCHEMACHECK_X402_FACILITATOR_URL", "https://api.cdp.coinbase.com/platform/v2/x402"),
         x402_real_verification_enabled=_as_bool(os.getenv("SCHEMACHECK_X402_REAL_VERIFICATION_ENABLED"), False),
     )
