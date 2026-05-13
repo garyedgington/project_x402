@@ -1,6 +1,6 @@
 # Project x402 — Phase Plan
 
-_Last updated: 2026-05-11 — Phase 6 in progress_
+_Last updated: 2026-05-13 — Phase 4b complete (MCP/DualRail); Phase 6 directory submissions in progress_
 
 ## Project Goal
 
@@ -115,6 +115,27 @@ Build a machine-native paid API service that performs one narrow, useful task an
 - At least one full measurement report exists.
 - Unit economics are known.
 - Clear decision exists: continue, revise, or stop.
+
+## Phase 4b — MCP Adapter Layer / DualRail [COMPLETE ✓]
+
+**Objective:** Add a second payment rail (MCP/fiat via MCP-Hive) alongside the existing x402/USDC rail. One FastAPI service, two revenue channels.
+
+**Tasks completed:**
+
+- Created `app/mcp_server.py` — FastMCP server exposing `validate_schema` and `validate_schema_trial` as MCP tools via Streamable HTTP transport (no x402 payment gate; MCP-Hive bills at protocol layer)
+- Updated `app/main.py` — Added FastAPI lifespan to start `StreamableHTTPSessionManager`; built `_mcp_asgi` once at module level; mounted at `"/"` after all FastAPI routes
+- Updated `requirements.txt` — Upgraded `fastapi==0.115.6` → `0.136.1` (needed starlette ≥0.49.1 for sse-starlette); added `mcp>=1.6.0`
+- MCP endpoint confirmed live at `https://projectx402-production.up.railway.app/mcp`
+- Added `smithery.yaml` for static tool metadata
+- Submitted to: **Smithery** (published), **mcp.so** (pending review), **MCP-Hive** (pending review)
+
+**Exit criteria met:**
+
+- MCP endpoint live and returning both tools via full three-step handshake
+- All 14 existing tests pass
+- Two directory submissions pending review (MCP-Hive is the fiat billing channel)
+
+---
 
 ## Phase 6 — Distribution Test [IN PROGRESS]
 

@@ -1,6 +1,6 @@
 # SchemaCheck Agent — Phase 6 Distribution Plan
 
-_Created: 2026-05-11 | Last updated: 2026-05-11_  
+_Created: 2026-05-11 | Last updated: 2026-05-13_  
 _Owner: Gary_
 
 ---
@@ -25,6 +25,16 @@ Find out whether agents or developers will actually call the endpoint. Publish t
 ---
 
 ## Distribution channels — priority order
+
+### Tier 0 — MCP directories (DualRail Rail 1)
+
+These channels reach AI agent developers and MCP-enabled clients directly.
+
+- [x] **Smithery** (`smithery.ai/server/gary-edgington/schemacheck-agent`) — Published 2026-05-13. Shows "0 tools" due to Smithery's crawler not completing the MCP handshake, but fully functional for proper clients. `smithery.yaml` added to repo for static metadata.
+- [x] **mcp.so** — Submitted 2026-05-13. Pending review. Server config: `{"mcpServers":{"schemacheck":{"url":"https://projectx402-production.up.railway.app/mcp"}}}`
+- [x] **MCP-Hive** (`mcp-hive.com`) — Submitted 2026-05-13. Pending admin review. Registered as provider at $0.005/call Pay per Call. This is the primary fiat billing channel for Rail 1.
+  - MCP endpoint: `https://projectx402-production.up.railway.app/mcp`
+  - Tools: `validate_schema`, `validate_schema_trial`
 
 ### Tier 1 — highest signal, lowest effort
 
@@ -129,6 +139,10 @@ Check Railway logs once per week and record:
 
 - [x] GitHub repo public with correct topics set
 - [x] Bazaar extension live in 402 responses — auto-indexed after first mainnet payment
+- [x] Smithery published — `gary-edgington/schemacheck-agent`
+- [x] mcp.so submitted — pending review
+- [x] MCP-Hive submitted — pending admin review ($0.005/call)
+- [ ] MCP-Hive approval confirmed — watch email
 - [ ] Fund test wallet and run mainnet payment test to trigger Bazaar indexing
 - [ ] Post in Coinbase / Base developer Discord (discord.gg/cdp)
 - [ ] Write and schedule Dev.to post

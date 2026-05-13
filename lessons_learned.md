@@ -86,6 +86,61 @@ On 2026-05-11, the first real x402 v2 USDC micropayment on Base Sepolia testnet 
 
 ---
 
+_Updated: 2026-05-13 — Phase 4b MCP adapter layer complete and submitted to directories_
+
+## Lesson 24 — FastMCP requires live type objects; do not use `from __future__ import annotations` in MCP server files
+
+FastMCP's tool registration calls `inspect.signature()` at decoration time and then does `issubclass(param.annotation, Context)` to check whether a parameter is an MCP Context. With `from __future__ import annotations`, all annotations are stored as lazy strings rather than live type objects, causing `issubclass` to raise `TypeError`. Remove the future import from any file that registers FastMCP tools.
+
+## Lesson 25 — Use a Union type alias instead of bare `Any` for JSON payload parameters in FastMCP
+
+FastMCP's guard at `base.py` checks `get_origin(annotation) is None` and then calls `issubclass`. Bare `typing.Any` has `get_origin() == None`, which causes it to fall into the `issubclass` branch and raise `TypeError`. Use a Union alias instead:
+
+```python
+_JSON = Union[Dict[str, Any], List[Any], str, int, float, bool, None]
+```
+
+This has `get_origin() != None` (it is `Union`), so FastMCP skips the `issubclass` check entirely.
+
+## Lesson 26 — FastMCP's streamable HTTP sub-app must be built once and shared between lifespan and mount
+
+`mcp.streamable_http_app()` returns an ASGI sub-app that holds a reference to the same `StreamableHTTPSessionManager` instance. Call it once at module level, assign it to `_mcp_asgi`, then use that variable in both the FastAPI lifespan and the `app.mount()` call. Calling it twice creates two separate session managers — one started, one not — causing 500 "Task group is not initialized" errors on some requests.
+
+## Lesson 27 — Mount the FastMCP sub-app at `"/"` not `"/mcp"`, placed after all FastAPI routes
+
+FastMCP's `streamable_http_app()` creates its own internal route at `/mcp`. If you mount it at `/mcp`, Starlette strips that prefix and the sub-app sees `/` — which doesn't match `/mcp`, so all requests 404. Mount at `"/"` instead, and place the mount call at the very end of `main.py` after all FastAPI routes are registered. FastAPI routes take precedence over the catch-all mount.
+
+## Lesson 28 — FastAPI lifespan is required to start the FastMCP session manager
+
+`StreamableHTTPSessionManager.run()` is an asynccontextmanager that must be entered before any MCP request arrives. Without it, the first request fails with "Task group is not initialized." Wire it into the FastAPI lifespan:
+
+```python
+@asynccontextmanager
+async def lifespan(app: FastAPI):
+    async with mcp.session_manager.run():
+        yield
+
+app = FastAPI(..., lifespan=lifespan)
+```
+
+## Lesson 29 — MCP Streamable HTTP requires a three-step handshake before tools/list
+
+The MCP spec (2025-03-26) requires: (1) `initialize` request → server responds with capabilities; (2) `notifications/initialized` notification → no response expected; (3) `tools/list` → server returns tool list. Skipping step 2 causes the server to reject step 3 with `-32602 Invalid request parameters`. Most directory crawlers (Smithery, mcp.so) do not complete this handshake and will show "0 tools" — this is a crawler limitation, not a server bug.
+
+## Lesson 30 — `smithery.yaml` static tool declarations only work for local (npm/uvx) servers on Smithery
+
+Smithery reads `smithery.yaml` to auto-configure local server startup. For remote HTTP servers, it does live introspection only. If the introspection fails (e.g. due to handshake requirements), tools show as "0 capabilities" in the directory even if the server is fully functional. The server is still usable by any MCP client that completes the proper handshake.
+
+## Lesson 31 — OneDrive sync lag causes stale `.pyc` caches in the Linux sandbox
+
+Files written via Claude's Edit/Write tools (Windows path) take time to sync to the Linux mount used by the bash sandbox. During the sync window, the sandbox may read a truncated or previous version of the file and compile a stale `.pyc`. Fix: after writing files through Edit/Write, either wait for OneDrive sync to complete or rewrite the file directly through bash using a Python heredoc script to bypass the cache.
+
+## Lesson 32 — `git add` with `GIT_INDEX_FILE` pointing to a temp path stages only files added in that session
+
+When a stale `index.lock` prevents normal `git add`, using `GIT_INDEX_FILE=/tmp/git-index-tmp git add` creates a fresh temporary index. That temporary index contains only the files explicitly added in that shell call — not the full working tree tracked files. A subsequent `git commit` using that temp index will appear to delete all other tracked files. Always resolve the lock file first (delete via Windows Explorer) rather than using a temp index for commits.
+
+---
+
 _Updated: 2026-05-12 — GitHub repo reconciliation and Formatter + A2A project setup_
 
 ## Lesson 16 — EIP-712 domain name differs between testnet and mainnet
