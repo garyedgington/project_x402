@@ -2,15 +2,20 @@
 
 A machine-native paid API for validating JSON payloads against JSON Schema.
 
-**Live endpoint:** `https://projectx402-production.up.railway.app`
+**Live endpoint:** `https://projectx402-production.up.railway.app`  
+**MCP endpoint:** `https://projectx402-production.up.railway.app/mcp`
 
 ---
 
 ## What it does
 
-Send a JSON Schema and a JSON payload. Get back a structured validation result: whether the payload is valid, a list of errors with JSON Pointer paths, a plain-English summary, and optionally a suggested corrected payload.
+Send a JSON Schema and a JSON payload. Get back a structured validation result: whether the payload is valid, a list of errors with JSONPath locations, a plain-English summary, and optionally a suggested corrected payload.
 
 Built for autonomous agents, backend pipelines, and developers who need reliable, cheap, per-call JSON validation without managing a library dependency.
+
+Supports two access modes:
+- **MCP tools** via Streamable HTTP — connect any MCP-compatible client directly, fiat billing via MCP-Hive
+- **REST + x402** — HTTP endpoint with USDC micropayment on Base mainnet ($0.005/call)
 
 ---
 
@@ -18,9 +23,28 @@ Built for autonomous agents, backend pipelines, and developers who need reliable
 
 | Endpoint | Payment | Repair | Limit |
 |---|---|---|---|
-| `POST /v1/schema-check` | x402 USDC required ($0.005) | Yes | None |
+| `/mcp` (MCP Streamable HTTP) | Fiat via MCP-Hive | Yes (`validate_schema`) | None |
+| `POST /v1/schema-check` | x402 USDC ($0.005) | Yes | None |
 | `POST /v1/schema-check/trial` | Free | No | 32KB request body |
 | `GET /health` | Free | — | — |
+
+---
+
+## Quickstart — MCP (recommended for AI agents)
+
+Add to your MCP client config:
+
+```json
+{
+  "mcpServers": {
+    "schemacheck": {
+      "url": "https://projectx402-production.up.railway.app/mcp"
+    }
+  }
+}
+```
+
+Two tools are available: `validate_schema` (full, with repair) and `validate_schema_trial` (free, no repair). See [docs/agent_quickstart.md](docs/agent_quickstart.md) for a full Python MCP client example.
 
 ---
 
@@ -156,6 +180,6 @@ Include:
 
 ## Further reading
 
-- [docs/agent_quickstart.md](docs/agent_quickstart.md) — Full agent integration guide with x402 payment examples
+- [docs/agent_quickstart.md](docs/agent_quickstart.md) — Full integration guide: MCP tools, x402 payment, trial endpoint
 - [api_contract.md](api_contract.md) — Full API contract and error shape reference
 - [docs/x402_real_flow.md](docs/x402_real_flow.md) — x402 v2 payment flow details

@@ -1,9 +1,99 @@
 # SchemaCheck Agent — Agent & Developer Quickstart
 
 **Base URL:** `https://projectx402-production.up.railway.app`  
-**Version:** 0.3.0  
-**Payment:** x402 v2, USDC on Base mainnet, $0.005 per call  
+**Version:** 1.12.4  
+**Payment options:** x402 v2 USDC micropayments ($0.005/call) · MCP via MCP-Hive (fiat)  
 **Trial endpoint:** Free, no payment, no repair, 32KB limit
+
+---
+
+## Access methods
+
+SchemaCheck Agent supports two payment rails:
+
+| Method | Transport | Billing | Best for |
+|---|---|---|---|
+| MCP tools | Streamable HTTP (`/mcp`) | Fiat via MCP-Hive | MCP-enabled agents and clients |
+| HTTP REST | HTTPS + x402 USDC | $0.005 USDC / call | x402-native agents, direct API callers |
+| Trial REST | HTTPS, free | None | Testing, dev, lightweight checks |
+
+---
+
+## 0. MCP access (recommended for AI agents)
+
+The `/mcp` endpoint exposes SchemaCheck Agent as a native MCP tool. Any MCP-compatible client (Claude, Cursor, Continue, custom agents) can use it without managing x402 payment flows.
+
+**MCP endpoint:** `https://projectx402-production.up.railway.app/mcp`  
+**Transport:** Streamable HTTP (MCP spec 2025-03-26)  
+**Tools:** `validate_schema` (full, with repair) · `validate_schema_trial` (free, no repair)
+
+### Connect in Claude Desktop (claude_desktop_config.json)
+
+```json
+{
+  "mcpServers": {
+    "schemacheck": {
+      "url": "https://projectx402-production.up.railway.app/mcp"
+    }
+  }
+}
+```
+
+### Connect via MCP client (Python)
+
+```python
+# pip install mcp
+import asyncio
+from mcp import ClientSession
+from mcp.client.streamable_http import streamablehttp_client
+
+async def main():
+    async with streamablehttp_client(
+        "https://projectx402-production.up.railway.app/mcp"
+    ) as (read, write, _):
+        async with ClientSession(read, write) as session:
+            await session.initialize()
+
+            # Free trial — no repair
+            result = await session.call_tool(
+                "validate_schema_trial",
+                {
+                    "json_schema": {
+                        "type": "object",
+                        "required": ["name", "email"],
+                        "properties": {
+                            "name": {"type": "string"},
+                            "email": {"type": "string", "format": "email"},
+                        },
+                    },
+                    "payload": {"name": "Ada", "email": "not-an-email"},
+                    "explain": True,
+                },
+            )
+            print(result.content[0].text)
+
+asyncio.run(main())
+```
+
+### MCP tool reference
+
+**`validate_schema`** — Full validation with optional repair. Billed via MCP-Hive.
+
+| Parameter | Type | Default | Description |
+|---|---|---|---|
+| `json_schema` | object | required | JSON Schema document (Draft 2020-12 or Draft-07) |
+| `payload` | any | required | JSON value to validate |
+| `strictness` | string | `"normal"` | `"strict"` · `"normal"` · `"lenient"` |
+| `repair` | boolean | `false` | Return suggested corrected payload when invalid |
+| `explain` | boolean | `true` | Include plain-English summary |
+
+**`validate_schema_trial`** — Validation only, no repair, always free.
+
+| Parameter | Type | Default | Description |
+|---|---|---|---|
+| `json_schema` | object | required | JSON Schema document |
+| `payload` | any | required | JSON value to validate |
+| `explain` | boolean | `true` | Include plain-English summary |
 
 ---
 
@@ -318,5 +408,5 @@ def emit_validated_output(output: dict) -> dict:
 
 ```bash
 curl https://projectx402-production.up.railway.app/health
-# {"status":"ok","service":"schemacheck-agent","version":"0.3.0"}
+# {"status":"ok","service":"schemacheck-agent","version":"1.12.4"}
 ```
