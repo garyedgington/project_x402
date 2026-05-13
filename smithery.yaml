@@ -1,0 +1,68 @@
+name: SchemaCheck Agent
+description: >
+  Validates JSON payloads against JSON Schema definitions (Draft 2020-12 / Draft-07).
+  Returns structured errors with JSONPath locations, error codes, and plain-English summaries.
+  The paid validate_schema tool includes optional repair suggestions that produce a corrected
+  payload when validation fails. The free validate_schema_trial tool provides validation only.
+
+tools:
+  - name: validate_schema
+    description: >
+      Validate a JSON payload against a JSON Schema. Returns whether the payload is valid,
+      a list of structured validation errors with JSONPath locations and error codes,
+      a human-readable summary, and — when repair=true and the payload is invalid —
+      a suggested corrected payload.
+    inputSchema:
+      type: object
+      required:
+        - json_schema
+        - payload
+      properties:
+        json_schema:
+          type: object
+          description: A valid JSON Schema document (Draft 2020-12 or Draft-07).
+        payload:
+          description: The JSON value to validate (object, array, string, number, boolean, or null).
+        strictness:
+          type: string
+          enum:
+            - strict
+            - normal
+            - lenient
+          default: normal
+          description: >
+            Controls repair aggressiveness.
+            strict — only fill fields with explicit defaults.
+            normal — fill missing required fields with type defaults.
+            lenient — same as normal (future: may coerce types).
+        repair:
+          type: boolean
+          default: false
+          description: >
+            When true and the payload is invalid, attempt to produce a suggested_payload
+            that satisfies the schema.
+        explain:
+          type: boolean
+          default: true
+          description: When true, include a human-readable explanation in the summary field.
+
+  - name: validate_schema_trial
+    description: >
+      Validate a JSON payload against a JSON Schema (free trial — no repair suggestions).
+      Identical to validate_schema but repair is always disabled.
+      Use this for lightweight checks where a corrected payload is not needed.
+    inputSchema:
+      type: object
+      required:
+        - json_schema
+        - payload
+      properties:
+        json_schema:
+          type: object
+          description: A valid JSON Schema document (Draft 2020-12 or Draft-07).
+        payload:
+          description: The JSON value to validate (object, array, string, number, boolean, or null).
+        explain:
+          type: boolean
+          default: true
+          description: When true, include a human-readable explanation in the summary field.
