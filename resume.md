@@ -29,7 +29,7 @@ All phases through Phase 5 are complete. The service is live, the trial endpoint
 | Trial endpoint | `POST /v1/schema-check/trial` — free, 32KB limit, no repair |
 | Health check | `GET /health` |
 | GitHub | `https://github.com/garyedgington/project_x402` (public) |
-| Deployment | Railway, auto-deploys from `master` branch |
+| Deployment | Railway, auto-deploys from `main` branch |
 | Payment | x402 v2, USDC on Base mainnet (`eip155:8453`) |
 | Version | 0.3.0 |
 
@@ -63,7 +63,7 @@ All phases through Phase 5 are complete. The service is live, the trial endpoint
 
 **Completed this session:**
 - [x] GitHub repo topics set: `json`, `jsonschema`, `x402`, `fastapi`, `micropayments`, `validation`, `usdc`, `base`
-- [x] UptimeRobot monitor set up for `/health` (HEAD fix pushed to master)
+- [x] UptimeRobot monitor set up for `/health` (HEAD fix pushed to main)
 - [x] Switched to Base mainnet: network `eip155:8453`, USDC asset, CDP facilitator
 - [x] EIP-712 domain updated: `"USD Coin"` for mainnet
 - [x] Bazaar extension confirmed present in 402 responses
@@ -121,7 +121,7 @@ All phases through Phase 5 are complete. The service is live, the trial endpoint
 
 - Python, FastAPI, jsonschema, Pydantic
 - x402[evm]==2.9.0 (EVM payment verification)
-- Railway (hosting, auto-deploy from master)
+- Railway (hosting, auto-deploy from main)
 - Base mainnet (USDC payments, real money)
 - x402 facilitator: `https://api.cdp.coinbase.com/platform/v2/x402` (CDP mainnet)
 

@@ -17,7 +17,7 @@ Add x402-shaped payment behavior without enabling real settlement until wallet, 
 - `SCHEMACHECK_X402_PRICE=$0.005`
 - `SCHEMACHECK_X402_NETWORK=eip155:8453`
 - `SCHEMACHECK_X402_SCHEME=exact`
-- `SCHEMACHECK_X402_FACILITATOR_URL=https://x402.org/facilitator`
+- `SCHEMACHECK_X402_FACILITATOR_URL=https://api.cdp.coinbase.com/platform/v2/x402`
 - `SCHEMACHECK_X402_REAL_VERIFICATION_ENABLED=false`
 
 ## HTTP headers
