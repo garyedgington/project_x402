@@ -116,3 +116,23 @@ Test and utility scripts (`test_payment.py`, `swap_eth_for_usdc.py`, `check_bala
 
 Working on a `master` branch while GitHub's default was `main` created a persistent stale split: GitHub showed old code, Railway had to be pointed at `master` explicitly, and cloning the repo fetched the wrong branch by default. For all new projects, use `main` exclusively from the first commit. Rename `master` to `main` immediately if the split already exists: `git branch -m master main && git push origin main --force`.
 
+## Lesson 23 — Every new Railway service needs a Procfile and railway.toml at scaffold time
+
+Railpack cannot auto-detect a start command when the FastAPI entry point is at `app/main.py` instead of `main.py` in the project root. Without a `Procfile` and `railway.toml`, the build fails with "No start command detected." Both files must be included when scaffolding any new service — not added retroactively after a failed deploy.
+
+`Procfile`:
+```
+web: uvicorn app.main:app --host 0.0.0.0 --port $PORT
+```
+
+`railway.toml`:
+```toml
+[build]
+builder = "NIXPACKS"
+
+[deploy]
+startCommand = "uvicorn app.main:app --host 0.0.0.0 --port $PORT"
+healthcheckPath = "/health"
+healthcheckTimeout = 100
+```
+
