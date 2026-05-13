@@ -63,11 +63,6 @@ app.add_middleware(
 if settings.log_requests:
     app.middleware("http")(request_logging_middleware)
 
-# MCP adapter -- exposes validate_schema tools via streamable HTTP transport.
-# Mounted after middleware so CORS and logging apply to /mcp as well.
-# Remote MCP URL: https://projectx402-production.up.railway.app/mcp
-app.mount("/mcp", mcp.streamable_http_app())
-
 
 @app.api_route("/health", methods=["GET", "HEAD"], response_model=HealthResponse)
 def health() -> HealthResponse:
@@ -271,3 +266,9 @@ async def schema_check_trial(raw_request: Request, request: SchemaCheckRequest) 
             repair_attempted=False,
         ),
     )
+
+
+# MCP adapter -- mounted at "/" (catch-all, after all FastAPI routes) so that
+# FastMCP's internal route at /mcp resolves correctly to the full path /mcp.
+# FastAPI routes above are matched first; unmatched /mcp requests fall through.
+app.mount("/", mcp.streamable_http_app())
