@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import json
+from contextlib import asynccontextmanager
 from dataclasses import dataclass, field
 from threading import Lock
 
@@ -20,6 +21,17 @@ settings = get_settings()
 APP_VERSION = settings.app_version
 
 TRIAL_MAX_BYTES = 32_768  # 32KB limit for trial endpoint
+
+# Build the MCP ASGI sub-app once so both the lifespan and the mount
+# share the same session_manager instance.
+_mcp_asgi = mcp.streamable_http_app()
+
+
+@asynccontextmanager
+async def lifespan(app: FastAPI):
+    """Start the FastMCP session manager before serving requests."""
+    async with mcp.session_manager.run():
+        yield
 
 
 @dataclass
@@ -51,6 +63,7 @@ app = FastAPI(
         "POST /v1/schema-check requires x402 USDC micropayment ($0.005). "
         "POST /v1/schema-check/trial is free, no repair suggestions, 32KB limit."
     ),
+    lifespan=lifespan,
 )
 
 app.add_middleware(
@@ -268,7 +281,7 @@ async def schema_check_trial(raw_request: Request, request: SchemaCheckRequest) 
     )
 
 
-# MCP adapter -- mounted at "/" (catch-all, after all FastAPI routes) so that
-# FastMCP's internal route at /mcp resolves correctly to the full path /mcp.
-# FastAPI routes above are matched first; unmatched /mcp requests fall through.
-app.mount("/", mcp.streamable_http_app())
+# MCP adapter -- mounted at "/" (catch-all after all FastAPI routes).
+# FastMCP's internal route is at /mcp, so full path resolves to /mcp.
+# The session manager is started via the lifespan above.
+app.mount("/", _mcp_asgi)
