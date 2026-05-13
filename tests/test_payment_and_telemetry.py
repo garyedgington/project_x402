@@ -75,11 +75,12 @@ def test_x402_payment_gate_returns_402_with_requirements(monkeypatch):
     response = client.post("/v1/schema-check", json={"json_schema": USER_SCHEMA, "payload": {"name": "Gary"}})
     assert response.status_code == 402
     detail = response.json()["detail"]
-    assert detail["code"] == "PAYMENT_REQUIRED"
-    assert detail["payment_protocol"] == "x402"
-    assert detail["payment_header"] == "X-PAYMENT"
-    assert detail["payment_requirements"]["network"] == "eip155:84532"
-    assert detail["payment_requirements"]["payTo"] == "0x8fC4006534801c17A3368075A1Fb3b3C511EdB1F"
+    # x402 mode returns the v2 PaymentRequired body (not the placeholder "code" format)
+    assert detail["x402Version"] == 2
+    assert "accepts" in detail
+    accepts = detail["accepts"][0]
+    assert accepts["network"] == "eip155:8453"
+    assert accepts["payTo"] == "0x8fC4006534801c17A3368075A1Fb3b3C511EdB1F"
     assert "PAYMENT-REQUIRED" in response.headers
 
 

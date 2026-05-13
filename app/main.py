@@ -10,6 +10,7 @@ from fastapi.responses import HTMLResponse
 from jsonschema import exceptions
 
 from app.config import get_settings
+from app.mcp_server import mcp
 from app.models import HealthResponse, ResponseMeta, SchemaCheckRequest, SchemaCheckResponse
 from app.payment import enforce_payment
 from app.telemetry import request_logging_middleware
@@ -61,6 +62,11 @@ app.add_middleware(
 
 if settings.log_requests:
     app.middleware("http")(request_logging_middleware)
+
+# MCP adapter -- exposes validate_schema tools via streamable HTTP transport.
+# Mounted after middleware so CORS and logging apply to /mcp as well.
+# Remote MCP URL: https://projectx402-production.up.railway.app/mcp
+app.mount("/mcp", mcp.streamable_http_app())
 
 
 @app.api_route("/health", methods=["GET", "HEAD"], response_model=HealthResponse)
@@ -217,7 +223,7 @@ def schema_check(request: SchemaCheckRequest) -> SchemaCheckResponse:
 @app.post(
     "/v1/schema-check/trial",
     response_model=SchemaCheckResponse,
-    summary="Trial — no payment required",
+    summary="Trial - no payment required",
     description=(
         "Free trial endpoint. No x402 payment required. "
         "Repair suggestions are disabled. Request body must not exceed 32KB. "
@@ -258,7 +264,7 @@ async def schema_check_trial(raw_request: Request, request: SchemaCheckRequest) 
         valid=valid,
         errors=errors,
         summary=summarize(valid, errors, request.explain),
-        suggested_payload=None,  # repair disabled on trial endpoint
+        suggested_payload=None,
         confidence=confidence,
         meta=ResponseMeta(
             strictness=request.strictness,
