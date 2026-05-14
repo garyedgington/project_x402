@@ -1,7 +1,6 @@
 from __future__ import annotations
 
 import json
-from contextlib import asynccontextmanager
 from dataclasses import dataclass, field
 from threading import Lock
 
@@ -21,18 +20,6 @@ settings = get_settings()
 APP_VERSION = settings.app_version
 
 TRIAL_MAX_BYTES = 32_768  # 32KB limit for trial endpoint
-
-# Build the MCP ASGI sub-app once so both the lifespan and the mount
-# share the same session_manager instance.
-_mcp_asgi = mcp.streamable_http_app()
-
-
-@asynccontextmanager
-async def lifespan(app: FastAPI):
-    """Start the FastMCP session manager before serving requests."""
-    async with mcp.session_manager.run():
-        yield
-
 
 @dataclass
 class _CallCounters:
@@ -63,7 +50,6 @@ app = FastAPI(
         "POST /v1/schema-check requires x402 USDC micropayment ($0.005). "
         "POST /v1/schema-check/trial is free, no repair suggestions, 32KB limit."
     ),
-    lifespan=lifespan,
 )
 
 app.add_middleware(
