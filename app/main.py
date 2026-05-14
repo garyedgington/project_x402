@@ -292,8 +292,8 @@ def mcp_server_card() -> dict:
             "Returns valid/invalid status with field-level error paths and "
             "optional suggested corrected payload. Part of the x402 micropayment task market."
         ),
-        "server_url": "https://projectx402-production.up.railway.app/mcp",
-        "transport": ["streamable-http"],
+        "server_url": "https://projectx402-production.up.railway.app/mcp/sse",
+        "transport": ["sse"],
         "tools": [
             {
                 "name": "validate_schema",
@@ -314,7 +314,6 @@ def mcp_server_card() -> dict:
     }
 
 
-# MCP adapter -- mounted at "/" (catch-all after all FastAPI routes).
-# FastMCP's internal route is at /mcp, so full path resolves to /mcp.
-# The session manager is started via the lifespan above.
-app.mount("/", _mcp_asgi)
+# MCP adapter -- SSE transport mounted at /mcp (Smithery-compatible).
+# SSE endpoint is at /mcp/sse. Streamable HTTP kept as fallback via _mcp_asgi.
+app.mount("/mcp", mcp.sse_app())
