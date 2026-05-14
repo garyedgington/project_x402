@@ -278,6 +278,12 @@ def mcp_server_card():
             "optional suggested corrected payload. Part of the x402 micropayment task market."
         ),
         "version": APP_VERSION,
+        "configSchema": {
+            "type": "object",
+            "description": "No configuration required. Connect directly — no API keys, credentials, or setup needed.",
+            "properties": {},
+            "required": [],
+        },
         "tools": [
             {
                 "name": "validate_schema",
