@@ -268,18 +268,16 @@ async def schema_check_trial(raw_request: Request, request: SchemaCheckRequest) 
 
 
 @app.get("/.well-known/mcp/server-card.json", include_in_schema=False)
-def mcp_server_card() -> dict:
-    """Smithery / MCP directory tool discovery endpoint."""
-    return {
-        "schema_version": "v1",
+def mcp_server_card():
+    from fastapi.responses import JSONResponse
+    return JSONResponse({
         "name": "SchemaCheck Agent",
         "description": (
             "Validate JSON payloads against JSON Schema Draft 7 / 2020-12. "
             "Returns valid/invalid status with field-level error paths and "
             "optional suggested corrected payload. Part of the x402 micropayment task market."
         ),
-        "server_url": "https://projectx402-production.up.railway.app/sse",
-        "transport": ["sse"],
+        "version": APP_VERSION,
         "tools": [
             {
                 "name": "validate_schema",
@@ -288,20 +286,38 @@ def mcp_server_card() -> dict:
                     "with structured errors, human-readable summary, and optional "
                     "suggested corrected payload when repair=true."
                 ),
+                "inputSchema": {
+                    "type": "object",
+                    "properties": {
+                        "json_schema": {"type": "object", "description": "A valid JSON Schema object (Draft 2020-12 or Draft-07)."},
+                        "payload": {"description": "The JSON value to validate (object, array, string, number, boolean, or null)."},
+                        "strictness": {"type": "string", "description": "Controls repair aggressiveness: strict, normal, or lenient.", "default": "normal"},
+                        "repair": {"type": "boolean", "description": "When true and payload is invalid, produce a suggested corrected payload.", "default": False},
+                        "explain": {"type": "boolean", "description": "When true, include a human-readable explanation in summary.", "default": True},
+                    },
+                    "required": ["json_schema", "payload"],
+                },
             },
             {
                 "name": "validate_schema_trial",
                 "description": (
-                    "Validate a JSON payload against a JSON Schema (free, no repair). "
+                    "Validate a JSON payload against a JSON Schema (free trial, no repair). "
                     "Identical to validate_schema but repair suggestions are always disabled."
                 ),
+                "inputSchema": {
+                    "type": "object",
+                    "properties": {
+                        "json_schema": {"type": "object", "description": "A valid JSON Schema object (Draft 2020-12 or Draft-07)."},
+                        "payload": {"description": "The JSON value to validate."},
+                        "explain": {"type": "boolean", "description": "When true, include a human-readable explanation in summary.", "default": True},
+                    },
+                    "required": ["json_schema", "payload"],
+                },
             },
         ],
-    }
+    })
 
 
-# MCP adapter -- SSE transport mounted at root so FastMCP generates correct
-# session URLs (/messages/?session_id=...) without a prefix mismatch.
-# SSE endpoint: /sse   Messages endpoint: /messages/
-# FastAPI explicit routes above take priority over this catch-all mount.
-app.mount("/", mcp.sse_app())
+# MCP adapter -- SSE transport, mounted at /mcp (matches formatter pattern).
+# SSE endpoint: /mcp/sse
+app.mount("/mcp", mcp.sse_app())
