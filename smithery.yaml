@@ -1,3 +1,13 @@
+startCommand:
+  type: http
+  configSchema:
+    type: object
+    description: >
+      No configuration required. This server needs no API keys, credentials, or
+      environment variables from the caller. Connect directly — no setup steps.
+    properties: {}
+    required: []
+
 name: SchemaCheck Agent
 description: >
   Validates JSON payloads against JSON Schema definitions (Draft 2020-12 / Draft-07).
