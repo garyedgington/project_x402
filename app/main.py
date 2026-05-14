@@ -281,6 +281,39 @@ async def schema_check_trial(raw_request: Request, request: SchemaCheckRequest) 
     )
 
 
+@app.get("/.well-known/mcp/server-card.json", include_in_schema=False)
+def mcp_server_card() -> dict:
+    """Smithery / MCP directory tool discovery endpoint."""
+    return {
+        "schema_version": "v1",
+        "name": "SchemaCheck Agent",
+        "description": (
+            "Validate JSON payloads against JSON Schema Draft 7 / 2020-12. "
+            "Returns valid/invalid status with field-level error paths and "
+            "optional suggested corrected payload. Part of the x402 micropayment task market."
+        ),
+        "server_url": "https://projectx402-production.up.railway.app/mcp",
+        "transport": ["streamable-http"],
+        "tools": [
+            {
+                "name": "validate_schema",
+                "description": (
+                    "Validate a JSON payload against a JSON Schema. Returns valid/invalid "
+                    "with structured errors, human-readable summary, and optional "
+                    "suggested corrected payload when repair=true."
+                ),
+            },
+            {
+                "name": "validate_schema_trial",
+                "description": (
+                    "Validate a JSON payload against a JSON Schema (free, no repair). "
+                    "Identical to validate_schema but repair suggestions are always disabled."
+                ),
+            },
+        ],
+    }
+
+
 # MCP adapter -- mounted at "/" (catch-all after all FastAPI routes).
 # FastMCP's internal route is at /mcp, so full path resolves to /mcp.
 # The session manager is started via the lifespan above.
