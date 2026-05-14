@@ -171,6 +171,67 @@ Test and utility scripts (`test_payment.py`, `swap_eth_for_usdc.py`, `check_bala
 
 Working on a `master` branch while GitHub's default was `main` created a persistent stale split: GitHub showed old code, Railway had to be pointed at `master` explicitly, and cloning the repo fetched the wrong branch by default. For all new projects, use `main` exclusively from the first commit. Rename `master` to `main` immediately if the split already exists: `git branch -m master main && git push origin main --force`.
 
+---
+
+_Updated: 2026-05-14 — Smithery 100/100 achieved_
+
+## Lesson 33 — Smithery quality score is driven by server-card.json, not live MCP scan
+
+Smithery's quality score (Capability Quality, Server Metadata, Configuration UX) reads exclusively from `/.well-known/mcp/server-card.json`. Live MCP tool introspection only affects the connectivity/uptime badge. The score for output schemas and annotations comes from whether those fields are present in the static server-card.json endpoint — not from what FastMCP auto-generates for live tools. Always update server-card.json when adding tool metadata.
+
+## Lesson 34 — `outputSchema` and `annotations` must be explicitly added to server-card.json
+
+Smithery's quality score deducts ~10pt for missing `outputSchema` and ~6pt for missing `annotations` per tool. These fields must be added manually to each tool entry in the `/.well-known/mcp/server-card.json` endpoint. FastMCP will auto-generate these for live MCP introspection, but Smithery does not read them from there — it reads the static card.
+
+`annotations` format:
+```json
+{
+  "readOnlyHint": true,
+  "destructiveHint": false,
+  "idempotentHint": true,
+  "openWorldHint": false
+}
+```
+
+`outputSchema` format: standard JSON Schema object describing the tool's return structure.
+
+## Lesson 35 — Use `typing_extensions.TypedDict` not `typing.TypedDict` with FastMCP on Python < 3.12
+
+FastMCP uses Pydantic to auto-generate `outputSchema` from a tool's return type annotation. On Python < 3.12, Pydantic's `create_model()` raises `PydanticUserError` when given `typing.TypedDict`. The fix is to import from `typing_extensions` instead:
+
+```python
+from typing_extensions import TypedDict  # not: from typing import TypedDict
+```
+
+This applies to all TypedDict classes used as return types in FastMCP tools, including nested ones.
+
+## Lesson 36 — A later commit can silently revert an earlier fix in the same file
+
+When a commit modifies a file that was previously changed in a different commit, it can accidentally re-introduce old code if the author copies from an older version. In this project, commit `4c28084` (adding inputSchema to server-card.json) re-reverted `app.mount("/", mcp.sse_app())` back to `app.mount("/mcp", mcp.sse_app())` while editing main.py. Always diff the full file against HEAD before committing, especially when the change is "add something to an existing block."
+
+## Lesson 37 — Git index.lock on Windows-mounted repos blocks all git operations from Linux sandbox
+
+When git operations run through a Windows-mounted filesystem in the Linux bash sandbox, a stale `.git/index.lock` can be left behind (e.g. after a failed command). The Linux sandbox cannot remove it (`Operation not permitted`). It must be deleted from Windows:
+
+```powershell
+Remove-Item "D:\path\to\project\.git\index.lock" -Force
+```
+
+Until the lock is removed, all `git add`, `git commit`, and `git status` calls will fail with "Another git process seems to be running."
+
+## Lesson 38 — Verify full MCP handshake with PowerShell before blaming Smithery
+
+To manually verify the full SSE → initialize flow:
+1. `curl.exe -N -H "Accept: text/event-stream" https://host/sse` — watch for `data: /messages/?session_id=xxx`
+2. In a new window: `Invoke-RestMethod -Uri "https://host/messages/?session_id=xxx" -Method POST -ContentType "application/json" -Body '{"jsonrpc":"2.0","id":1,"method":"initialize",...}'`
+3. Expected: `"Accepted"` response. The actual JSON-RPC response appears in the SSE stream in window 1.
+
+Use `Invoke-RestMethod` not `curl.exe` for JSON POST in PowerShell — curl.exe mangles multi-line JSON with backtick continuation.
+
+## Lesson 39 — Smithery "No config schema provided" warning cannot be suppressed server-side
+
+Smithery shows "Warning: No config schema provided" in scan logs for any server that has no configurable parameters. This warning persists regardless of what is in `smithery.yaml` or `server-card.json`. It is an automated informational check, does not affect the quality score, and is not user-facing. It can be safely ignored for services that genuinely require no configuration.
+
 ## Lesson 23 — Every new Railway service needs a Procfile and railway.toml at scaffold time
 
 Railpack cannot auto-detect a start command when the FastAPI entry point is at `app/main.py` instead of `main.py` in the project root. Without a `Procfile` and `railway.toml`, the build fails with "No start command detected." Both files must be included when scaffolding any new service — not added retroactively after a failed deploy.

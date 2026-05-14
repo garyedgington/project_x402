@@ -135,6 +135,22 @@ Status: COMPLETE ✓ (2026-05-11)
 
 Next phase: Phase 6 — Distribution and external caller measurement.
 
+## Phase 4b — MCP Adapter + Smithery
+
+Status: COMPLETE ✓ (2026-05-14)
+
+- MCP server (mcp_server.py) with validate_schema + validate_schema_trial tools
+- SSE transport, mounted at root (`app.mount("/", mcp.sse_app())`)
+- SSE endpoint: /sse — verified 200 text/event-stream
+- Full MCP handshake verified: GET /sse → session_id → POST /messages/ → "Accepted"
+- smithery.yaml added with startCommand (type: http) and empty configSchema
+- server-card.json endpoint at /.well-known/mcp/server-card.json with inputSchema, outputSchema, and annotations for both tools
+- TypedDict return types (typing_extensions) for FastMCP outputSchema auto-generation
+- ToolAnnotations(readOnlyHint=True, destructiveHint=False, idempotentHint=True, openWorldHint=False) on both tools
+- Smithery score: **100/100** — Capability Quality 40/40, Server Metadata 35/35, Configuration UX 25/25
+- Smithery URL: https://smithery.ai/server/gary-edgington/schemacheck-agent
+- README updated: /sse endpoint, SSE transport
+
 ## Phase 6 — Distribution Test
 
 Status: IN PROGRESS (started 2026-05-11)
