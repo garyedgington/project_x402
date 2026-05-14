@@ -3,7 +3,7 @@
 A machine-native paid API for validating JSON payloads against JSON Schema.
 
 **Live endpoint:** `https://projectx402-production.up.railway.app`  
-**MCP endpoint:** `https://projectx402-production.up.railway.app/mcp`
+**MCP endpoint:** `https://projectx402-production.up.railway.app/sse`
 
 ---
 
@@ -14,7 +14,7 @@ Send a JSON Schema and a JSON payload. Get back a structured validation result: 
 Built for autonomous agents, backend pipelines, and developers who need reliable, cheap, per-call JSON validation without managing a library dependency.
 
 Supports two access modes:
-- **MCP tools** via Streamable HTTP — connect any MCP-compatible client directly, fiat billing via MCP-Hive
+- **MCP tools** via SSE — connect any MCP-compatible client directly, fiat billing via MCP-Hive
 - **REST + x402** — HTTP endpoint with USDC micropayment on Base mainnet ($0.005/call)
 
 ---
@@ -23,7 +23,7 @@ Supports two access modes:
 
 | Endpoint | Payment | Repair | Limit |
 |---|---|---|---|
-| `/mcp` (MCP Streamable HTTP) | Fiat via MCP-Hive | Yes (`validate_schema`) | None |
+| `GET /sse` (MCP SSE) | Fiat via MCP-Hive | Yes (`validate_schema`) | None |
 | `POST /v1/schema-check` | x402 USDC ($0.005) | Yes | None |
 | `POST /v1/schema-check/trial` | Free | No | 32KB request body |
 | `GET /health` | Free | — | — |
@@ -38,7 +38,7 @@ Add to your MCP client config:
 {
   "mcpServers": {
     "schemacheck": {
-      "url": "https://projectx402-production.up.railway.app/mcp"
+      "url": "https://projectx402-production.up.railway.app/sse"
     }
   }
 }
