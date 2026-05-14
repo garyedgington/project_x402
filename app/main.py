@@ -286,16 +286,46 @@ def mcp_server_card():
                     "with structured errors, human-readable summary, and optional "
                     "suggested corrected payload when repair=true."
                 ),
+                "annotations": {
+                    "readOnlyHint": True,
+                    "destructiveHint": False,
+                    "idempotentHint": True,
+                    "openWorldHint": False,
+                },
                 "inputSchema": {
                     "type": "object",
                     "properties": {
                         "json_schema": {"type": "object", "description": "A valid JSON Schema object (Draft 2020-12 or Draft-07)."},
                         "payload": {"description": "The JSON value to validate (object, array, string, number, boolean, or null)."},
-                        "strictness": {"type": "string", "description": "Controls repair aggressiveness: strict, normal, or lenient.", "default": "normal"},
+                        "strictness": {"type": "string", "enum": ["strict", "normal", "lenient"], "description": "Controls repair aggressiveness: strict, normal, or lenient.", "default": "normal"},
                         "repair": {"type": "boolean", "description": "When true and payload is invalid, produce a suggested corrected payload.", "default": False},
                         "explain": {"type": "boolean", "description": "When true, include a human-readable explanation in summary.", "default": True},
                     },
                     "required": ["json_schema", "payload"],
+                },
+                "outputSchema": {
+                    "type": "object",
+                    "properties": {
+                        "valid": {"type": "boolean", "description": "Whether the payload conforms to the schema."},
+                        "errors": {
+                            "type": "array",
+                            "description": "List of validation errors with JSONPath locations.",
+                            "items": {"type": "object"},
+                        },
+                        "summary": {"type": "string", "description": "Human-readable validation result summary."},
+                        "suggested_payload": {"description": "Corrected payload when repair=true and validation failed, otherwise null."},
+                        "confidence": {"type": "number", "description": "Confidence score between 0 and 1."},
+                        "meta": {
+                            "type": "object",
+                            "properties": {
+                                "strictness": {"type": "string"},
+                                "repair_attempted": {"type": "boolean"},
+                                "engine": {"type": "string"},
+                                "schema_draft": {"type": "string"},
+                            },
+                        },
+                    },
+                    "required": ["valid", "errors", "summary", "suggested_payload", "confidence", "meta"],
                 },
             },
             {
@@ -304,6 +334,12 @@ def mcp_server_card():
                     "Validate a JSON payload against a JSON Schema (free trial, no repair). "
                     "Identical to validate_schema but repair suggestions are always disabled."
                 ),
+                "annotations": {
+                    "readOnlyHint": True,
+                    "destructiveHint": False,
+                    "idempotentHint": True,
+                    "openWorldHint": False,
+                },
                 "inputSchema": {
                     "type": "object",
                     "properties": {
@@ -312,6 +348,30 @@ def mcp_server_card():
                         "explain": {"type": "boolean", "description": "When true, include a human-readable explanation in summary.", "default": True},
                     },
                     "required": ["json_schema", "payload"],
+                },
+                "outputSchema": {
+                    "type": "object",
+                    "properties": {
+                        "valid": {"type": "boolean", "description": "Whether the payload conforms to the schema."},
+                        "errors": {
+                            "type": "array",
+                            "description": "List of validation errors with JSONPath locations.",
+                            "items": {"type": "object"},
+                        },
+                        "summary": {"type": "string", "description": "Human-readable validation result summary."},
+                        "suggested_payload": {"description": "Always null for the trial endpoint."},
+                        "confidence": {"type": "number", "description": "Confidence score between 0 and 1."},
+                        "meta": {
+                            "type": "object",
+                            "properties": {
+                                "strictness": {"type": "string"},
+                                "repair_attempted": {"type": "boolean"},
+                                "engine": {"type": "string"},
+                                "schema_draft": {"type": "string"},
+                            },
+                        },
+                    },
+                    "required": ["valid", "errors", "summary", "suggested_payload", "confidence", "meta"],
                 },
             },
         ],
