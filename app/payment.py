@@ -66,63 +66,58 @@ def build_x402_payment_required(settings: Settings, resource_url: str) -> dict[s
                 },
             }
         ],
-        "extensions": {
-            "bazaar": {
-                "info": {
-                    "input": {
-                        "type": "http",
-                        "method": "POST",
-                        "bodyType": "json",
-                        "body": {
-                            "json_schema": {"type": "object", "description": "JSON Schema document to validate the payload against"},
-                            "payload":     {"type": "any",    "description": "The JSON value to validate"},
-                            "strictness":  {"type": "string", "description": "strict | normal | lenient. Default: normal"},
-                            "repair":      {"type": "boolean","description": "If true, return a suggested corrected payload. Default: false"},
-                            "explain":     {"type": "boolean","description": "If true, include a plain-English summary. Default: true"},
-                        },
-                    },
-                    "output": {
-                        "type": "json",
-                        "example": {
-                            "valid": True,
-                            "errors": [],
-                            "summary": "Payload is valid against the supplied JSON Schema.",
-                            "confidence": 1.0,
-                        },
-                    },
-                },
-                "schema": {
-                    "$schema": "https://json-schema.org/draft/2020-12/schema",
-                    "type": "object",
-                    "properties": {
-                        "input": {
-                            "type": "object",
-                            "properties": {
-                                "json_schema": {"type": "object"},
-                                "payload":     {},
-                                "strictness":  {"type": "string", "enum": ["strict", "normal", "lenient"]},
-                                "repair":      {"type": "boolean"},
-                                "explain":     {"type": "boolean"},
-                            },
-                            "required": ["json_schema", "payload"],
-                            "additionalProperties": False,
-                        },
-                        "output": {
-                            "type": "object",
-                            "properties": {
-                                "valid":             {"type": "boolean"},
-                                "errors":            {"type": "array"},
-                                "summary":           {"type": "string"},
-                                "suggested_payload": {},
-                                "confidence":        {"type": "number"},
-                            },
-                        },
-                    },
-                    "required": ["input"],
-                },
-            }
-        },
+        "extensions": _build_bazaar_extensions(),
     }
+
+
+def _build_bazaar_extensions() -> dict[str, Any]:
+    """Build the canonical extensions block for CDP Bazaar discovery.
+
+    Uses x402.extensions.bazaar.declare_discovery_extension to guarantee conformance
+    with the schema CDP's indexer validates against, then manually injects method="POST"
+    since this server doesn't wire up bazaar_resource_server_extension for runtime enrichment.
+    """
+    from x402.extensions.bazaar import declare_discovery_extension
+    from x402.extensions.bazaar.resource_service import OutputConfig
+
+    ext = declare_discovery_extension(
+        input={
+            "json_schema": {
+                "type": "object",
+                "properties": {"name": {"type": "string"}, "age": {"type": "integer"}},
+                "required": ["name", "age"],
+            },
+            "payload": {"name": "Alice", "age": 30},
+            "strictness": "normal",
+            "repair": False,
+            "explain": True,
+        },
+        input_schema={
+            "type": "object",
+            "properties": {
+                "json_schema": {"type": "object", "description": "JSON Schema document to validate the payload against"},
+                "payload":     {"description": "The JSON value to validate against the schema"},
+                "strictness":  {"type": "string", "enum": ["strict", "normal", "lenient"], "description": "Validation strictness. Default: normal"},
+                "repair":      {"type": "boolean", "description": "If true, return a suggested corrected payload. Default: false"},
+                "explain":     {"type": "boolean", "description": "If true, include a plain-English summary. Default: true"},
+            },
+            "required": ["json_schema", "payload"],
+        },
+        body_type="json",
+        output=OutputConfig(
+            example={
+                "valid": True,
+                "errors": [],
+                "summary": "Payload is valid against the supplied JSON Schema.",
+                "suggested_payload": None,
+                "confidence": 1.0,
+            },
+        ),
+    )
+    # The helper leaves method to be enriched at request-time by the runtime extension;
+    # we don't wire that up, so inject it explicitly here so CDP's indexer sees it.
+    ext["bazaar"]["info"]["input"]["method"] = "POST"
+    return ext
 
 
 def _raise_x402_payment_required(settings: Settings) -> None:
