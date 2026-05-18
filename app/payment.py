@@ -124,6 +124,52 @@ def _raise_x402_payment_required(settings: Settings) -> None:
     )
 
 
+def _build_facilitator_config(settings: Settings) -> Any:
+    """Build a FacilitatorConfig, adding CDP authentication when the facilitator is CDP-hosted.
+
+    The hosted CDP facilitator (api.cdp.coinbase.com) requires per-request JWT auth
+    generated from CDP API key + secret. The open testnet facilitator (x402.org) does not.
+    """
+    from x402.http import FacilitatorConfig, CreateHeadersAuthProvider
+
+    url = settings.x402_facilitator_url
+    if "cdp.coinbase.com" not in url:
+        return FacilitatorConfig(url=url)
+
+    import os
+    api_key_id = os.getenv("CDP_API_KEY_ID")
+    api_key_secret = os.getenv("CDP_API_KEY_SECRET")
+    if not api_key_id or not api_key_secret:
+        raise RuntimeError(
+            "CDP facilitator requires CDP_API_KEY_ID and CDP_API_KEY_SECRET environment variables."
+        )
+
+    from urllib.parse import urlparse
+    from cdp.auth import get_auth_headers, GetAuthHeadersOptions
+
+    parsed = urlparse(url)
+    host = parsed.netloc
+    base_path = parsed.path.rstrip("/")
+
+    def _hdrs(method: str, path: str) -> dict[str, str]:
+        return get_auth_headers(GetAuthHeadersOptions(
+            api_key_id=api_key_id,
+            api_key_secret=api_key_secret,
+            request_method=method,
+            request_host=host,
+            request_path=path,
+        ))
+
+    def create_headers() -> dict[str, dict[str, str]]:
+        return {
+            "verify":    _hdrs("POST", f"{base_path}/verify"),
+            "settle":    _hdrs("POST", f"{base_path}/settle"),
+            "supported": _hdrs("GET",  f"{base_path}/supported"),
+        }
+
+    return FacilitatorConfig(url=url, auth_provider=CreateHeadersAuthProvider(create_headers))
+
+
 def verify_x402_payment(payment_payload: str, settings: Settings) -> None:
     """Verify x402 payment through the SDK when explicitly enabled."""
     if not settings.x402_real_verification_enabled:
@@ -148,7 +194,7 @@ def verify_x402_payment(payment_payload: str, settings: Settings) -> None:
         ) from exc
 
     try:
-        facilitator = HTTPFacilitatorClientSync(FacilitatorConfig(url=settings.x402_facilitator_url))
+        facilitator = HTTPFacilitatorClientSync(_build_facilitator_config(settings))
         resource_server = x402ResourceServerSync(facilitator)
         resource_server.register(settings.x402_network, ExactEvmServerScheme())
         resource_server.initialize()
