@@ -68,45 +68,57 @@ def build_x402_payment_required(settings: Settings, resource_url: str) -> dict[s
         ],
         "extensions": {
             "bazaar": {
-                "discoverable": True,
-                "inputSchema": {
-                    "body": {
-                        "json_schema": {
-                            "type": "object",
-                            "description": "JSON Schema document to validate the payload against",
-                            "required": True,
+                "info": {
+                    "input": {
+                        "type": "http",
+                        "method": "POST",
+                        "bodyType": "json",
+                        "body": {
+                            "json_schema": {"type": "object", "description": "JSON Schema document to validate the payload against"},
+                            "payload":     {"type": "any",    "description": "The JSON value to validate"},
+                            "strictness":  {"type": "string", "description": "strict | normal | lenient. Default: normal"},
+                            "repair":      {"type": "boolean","description": "If true, return a suggested corrected payload. Default: false"},
+                            "explain":     {"type": "boolean","description": "If true, include a plain-English summary. Default: true"},
                         },
-                        "payload": {
-                            "type": "any",
-                            "description": "The JSON value to validate",
-                            "required": True,
+                    },
+                    "output": {
+                        "type": "json",
+                        "example": {
+                            "valid": True,
+                            "errors": [],
+                            "summary": "Payload is valid against the supplied JSON Schema.",
+                            "confidence": 1.0,
                         },
-                        "strictness": {
-                            "type": "string",
-                            "description": "Validation strictness: strict | normal | lenient. Default: normal",
-                            "required": False,
-                        },
-                        "repair": {
-                            "type": "boolean",
-                            "description": "If true, return a suggested corrected payload when possible. Default: false",
-                            "required": False,
-                        },
-                        "explain": {
-                            "type": "boolean",
-                            "description": "If true, include a plain-English summary. Default: true",
-                            "required": False,
-                        },
-                    }
+                    },
                 },
-                "outputSchema": {
+                "schema": {
+                    "$schema": "https://json-schema.org/draft/2020-12/schema",
                     "type": "object",
                     "properties": {
-                        "valid": {"type": "boolean", "description": "True if the payload passes schema validation"},
-                        "errors": {"type": "array", "description": "List of structured validation errors"},
-                        "summary": {"type": "string", "description": "Plain-English validation summary"},
-                        "suggested_payload": {"type": "any", "description": "Suggested corrected payload (when repair=true)"},
-                        "confidence": {"type": "number", "description": "Confidence score 0-1"},
+                        "input": {
+                            "type": "object",
+                            "properties": {
+                                "json_schema": {"type": "object"},
+                                "payload":     {},
+                                "strictness":  {"type": "string", "enum": ["strict", "normal", "lenient"]},
+                                "repair":      {"type": "boolean"},
+                                "explain":     {"type": "boolean"},
+                            },
+                            "required": ["json_schema", "payload"],
+                            "additionalProperties": False,
+                        },
+                        "output": {
+                            "type": "object",
+                            "properties": {
+                                "valid":             {"type": "boolean"},
+                                "errors":            {"type": "array"},
+                                "summary":           {"type": "string"},
+                                "suggested_payload": {},
+                                "confidence":        {"type": "number"},
+                            },
+                        },
                     },
+                    "required": ["input"],
                 },
             }
         },
