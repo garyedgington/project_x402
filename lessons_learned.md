@@ -252,3 +252,77 @@ healthcheckPath = "/health"
 healthcheckTimeout = 100
 ```
 
+---
+
+_Updated: 2026-05-18 — First mainnet payment, CDP auth, and Bazaar indexing confirmed_
+
+## Lesson 40 — CDP's hosted facilitator requires per-request JWT authentication
+
+Unlike `x402.org/facilitator` (testnet, open and unauthenticated), CDP's hosted facilitator at `https://api.cdp.coinbase.com/platform/v2/x402` rejects every call with `401 Unauthorized` unless each request to `/verify`, `/settle`, and `/supported` includes a JWT-signed `Authorization` header. The JWT is generated per-request from a CDP API key + secret via `cdp.auth.get_auth_headers(GetAuthHeadersOptions(...))`. The x402 SDK exposes a wrapper for this: `FacilitatorConfig(url=..., auth_provider=CreateHeadersAuthProvider(create_headers))` where `create_headers` returns `{"verify": {...}, "settle": {...}, "supported": {...}}`. Without this, the server returns `X402_PAYMENT_FAILED: Facilitator get_supported failed (401): Unauthorized` and no payment can settle on mainnet.
+
+## Lesson 41 — `CDP_API_KEY_SECRET` is a multi-line PEM private key — paste the whole block including BEGIN/END markers
+
+CDP's API key consists of a UUID-style Key ID and a multi-line PEM-encoded EC private key. When pasted into Railway environment variables, the entire PEM block including `-----BEGIN EC PRIVATE KEY-----`, the body, and `-----END EC PRIVATE KEY-----` must be present, with line breaks preserved. Railway's UI accepts multi-line values directly. CDP shows the private key exactly once at key creation time — save it to a password manager immediately. Lost keys cannot be recovered; only a new key can be issued.
+
+## Lesson 42 — CDP Bazaar indexer silently drops non-conformant `extensions.bazaar` blocks
+
+Even with a fully settled mainnet payment, CDP's discovery indexer will not surface a resource unless the `extensions.bazaar` block matches the canonical schema defined in `x402.extensions.bazaar.types`. The indexer validates against:
+```
+extensions.bazaar = {
+    info: {
+        input:  BodyInput | QueryInput | McpInput,    # type=http, method, bodyType, body | queryParams | etc.
+        output: OutputInfo                              # type, optional example
+    },
+    schema: { $schema: <draft-2020-12>, properties: { input, output }, required: [input] }
+}
+```
+A non-conformant shape (e.g. `{discoverable, inputSchema, outputSchema}`) is silently dropped — payment still settles, server returns 200, but the resource never appears in `https://api.cdp.coinbase.com/platform/v2/x402/discovery/resources`. To guarantee conformance, generate the block with `x402.extensions.bazaar.declare_discovery_extension(...)` rather than hand-writing it.
+
+## Lesson 43 — `info.input.method` must be present; the SDK helper leaves it for runtime middleware to inject
+
+`x402.extensions.bazaar.declare_discovery_extension` produces a canonical bazaar block but deliberately omits `info.input.method`. The SDK design is that `bazaar_resource_server_extension` middleware will inject the method at request time from the route handler context. If the server doesn't use that middleware (this project doesn't), the method must be injected manually:
+```python
+ext = declare_discovery_extension(...)
+ext["bazaar"]["info"]["input"]["method"] = "POST"
+```
+Without this, the indexer accepts the entry's structure but the resource may be incomplete or unrankable in discovery results. The indexed example from another endpoint clearly had `method: "GET"` populated, confirming this is a required field for downstream consumption.
+
+## Lesson 44 — CDP Bazaar discovery API uses `items` as the array key, not `resources`
+
+`GET https://api.cdp.coinbase.com/platform/v2/x402/discovery/resources` returns `{ items: [...], pagination: { limit, offset, total }, x402Version: 2 }`. Querying `$resp.resources` (the natural-sounding name) silently yields nothing in PowerShell because the property doesn't exist. Use `$resp.items`. Total entries can be in the tens of thousands (~48k as of 2026-05-18), so paginate or filter by search rather than scanning page 1 alone.
+
+## Lesson 45 — Bazaar indexing latency is sub-hour once format is correct
+
+After the third paid call with the canonical bazaar extension on 2026-05-18 at 21:21:07 UTC, the resource was queryable in CDP's discovery index by 21:55 UTC — under 35 minutes. The two prior paid calls with non-conformant format never indexed at all, regardless of waiting. Conclusion: if a service is not indexed within ~1 hour of the first canonical-format paid call, the issue is the extension format (or another validation rule), not indexer latency.
+
+## Lesson 46 — Coinbase exchange's "Coinbase Wallet" send shortcut may route to an EOA, not the user's Smart Wallet
+
+When sending from Coinbase exchange via the "Send crypto to → Coinbase Wallet (mrgedgy.cb.id)" shortcut, the funds land at a linked EOA address (`0x9F40C27c...`), not at the Coinbase Smart Wallet that wallet.coinbase.com currently displays (`0x8fC4006...`). The Basename and the underlying account routing are decided once at account creation. Verify the actual destination address shown in the post-send confirmation screen before assuming the funds went where you expected. To send to a specific address, type the address directly into the search field instead of using the shortcut.
+
+## Lesson 47 — Coinbase Smart Wallets are passkey-controlled smart contracts; they cannot be a payer in `test_payment.py`
+
+Coinbase Smart Wallets (the wallet.coinbase.com product) are ERC-4337 smart contract accounts controlled by passkeys, not raw EOA private keys. They cannot be used as the `Account.from_key(...)` source in scripts that sign EIP-3009 authorizations. A separate EOA keypair (private key stored in `test_payment.py`) is required for the payer role. The Smart Wallet is appropriate as the receiver/`payTo` address but never as the signer.
+
+## Lesson 48 — For x402 EIP-3009 payers, ETH-for-gas is not required
+
+Because the facilitator submits the `transferWithAuthorization` transaction (not the payer), the payer's wallet never needs ETH for gas. It only needs USDC. This is critical for funding test wallets — sending only USDC to the test wallet on Base is sufficient; no Base ETH bridge needed. EOAs *outside* the x402 flow (e.g. forwarding USDC to another wallet manually) still need ETH for gas.
+
+---
+
+## Session changelog — 2026-05-18
+
+**Code changes:**
+- `app/payment.py`: Added `_build_facilitator_config(settings)` helper that detects CDP-hosted facilitator URLs and wraps `FacilitatorConfig` with `CreateHeadersAuthProvider`. The provider calls `cdp.auth.get_auth_headers` per `/verify`, `/settle`, `/supported` endpoint, generating fresh JWTs for each. Raises a clear `RuntimeError` if `CDP_API_KEY_ID`/`CDP_API_KEY_SECRET` env vars are missing.
+- `app/payment.py`: Replaced hand-written `extensions.bazaar` block with `_build_bazaar_extensions()` that calls `x402.extensions.bazaar.declare_discovery_extension(...)` and injects `info.input.method = "POST"` post-hoc. Guarantees conformance to CDP's indexer schema.
+- `requirements.txt`: Added `cdp-sdk>=1.45.0`.
+
+**Railway env vars added:**
+- `CDP_API_KEY_ID` — UUID from portal.cdp.coinbase.com
+- `CDP_API_KEY_SECRET` — full PEM-encoded EC private key
+
+**Mainnet payments:**
+- 3 settled $0.005 USDC payments from `0x272DDa1C5caC775752ab8432A50dfD8ed2d4001B` → `0x8fC4006534801c17A3368075A1Fb3b3C511EdB1F` via CDP facilitator.
+- Test wallet remaining balance: ~$0.985 USDC.
+- Receiver Smart Wallet shows $0.015 in Coinbase Wallet web.
+
+**Bazaar indexing:** confirmed live at https://api.cdp.coinbase.com/platform/v2/x402/discovery/resources, lastUpdated `2026-05-18T21:21:07.084Z`.
